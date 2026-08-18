@@ -38,7 +38,7 @@
             font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
             color: var(--ink);
             margin: 0;
-            padding: 18px;
+            padding: 18px 18px 160px;
             min-height: 100vh;
             user-select: none;
             overflow-x: hidden;
@@ -533,22 +533,26 @@
         /* ======================== Log (ledger) ======================== */
 
         #log {
-            position: relative;
-            z-index: 2;
-            width: 100%;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            width: calc(100% - 36px);
             max-width: 1480px;
-            height: 150px;
-            margin: 16px auto 0;
+            height: 132px;
+            margin: 0;
             background: linear-gradient(180deg, #4a3018, #3a2410);
             color: #e8d9b8;
             font-family: "Noto Sans SC", monospace;
-            padding: 12px 16px;
+            padding: 10px 16px;
             overflow-y: auto;
-            border-radius: 14px;
+            border-radius: 14px 14px 0 0;
             font-size: 13px;
             line-height: 1.5;
             border: 1px solid #2c1a08;
-            box-shadow: var(--shadow-lg), var(--shadow-inset);
+            border-bottom: none;
+            box-shadow: 0 -6px 20px rgba(74, 48, 20, 0.4), var(--shadow-inset);
         }
         #log::before {
             content: "对局记录 · LEDGER";
