@@ -65,9 +65,10 @@ class MCTSAI {
     this.iterations = options.iterations || 1000;
     this.exploration = options.exploration ?? Math.SQRT2;
     this.rolloutPolicy = options.rolloutPolicy || stagedRolloutPolicy;
-    // Opponents during rollout: default to greedy (matches the common arena
-    // setup MCTS-vs-greedy) so score estimates reflect realistic opponents.
-    this.opponentRolloutPolicy = options.opponentRolloutPolicy || greedyPolicy;
+    // Opponents during rollout default to staged (fast, ~9x cheaper than greedy
+    // which clones per candidate). Staged also plays stronger than greedy, so
+    // score estimates reflect more realistic opponents.
+    this.opponentRolloutPolicy = options.opponentRolloutPolicy || stagedRolloutPolicy;
     this.rolloutDepth = options.rolloutDepth || 0; // 0 = play to end
     this.verbose = options.verbose || false;
     this.playerId = options.playerId ?? 0;
