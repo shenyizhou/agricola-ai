@@ -109,7 +109,7 @@ class BrowserGame {
   _runAITurn(p) {
     this.aiThinking = true;
     this.onStateChange();
-    this.log(`${p.name} 思考中...`, p.color || '#888');
+    this.log(`${p.name} 思考中...`, this._playerColor(p));
 
     // Run MCTS asynchronously to avoid blocking UI
     setTimeout(() => {
@@ -130,7 +130,7 @@ class BrowserGame {
 
       try {
         this.engine.applyAction(action);
-        this.log(`${p.name} 执行 ${action.label} (${elapsed}ms)`, p.color || '#888');
+        this.log(`${p.name} 执行 ${action.label} (${elapsed}ms)`, this._playerColor(p));
       } catch (e) {
         console.error('AI action failed:', e);
         // Fallback: random
@@ -448,9 +448,12 @@ class BrowserGame {
     document.getElementById('round-info').innerText = `第 ${s.round} 轮`;
 
     const p = this.engine.currentPlayer;
-    const turnText = this.aiThinking ? `${p.name} 思考中... (MCTS ${this.aiIterations}次模拟)` : `轮到: ${p.name}`;
-    document.getElementById('turn-info').innerText = turnText;
-    document.getElementById('turn-info').style.color = p.color || (p.id === 0 ? '#29b6f6' : '#888');
+    const turnText = this.aiThinking ? `${p.name} 思考中… (MCTS ${this.aiIterations}次模拟)` : `轮到 ${p.name}`;
+    const ti = document.getElementById('turn-info');
+    ti.innerText = turnText;
+    ti.style.color = '#fff7e6';
+    ti.style.background = this._playerColor(p);
+    ti.style.borderColor = 'rgba(0,0,0,0.35)';
 
     this._renderActions();
     this._renderPlayers();
@@ -506,9 +509,9 @@ class BrowserGame {
     if (occupied !== undefined) {
       d.classList.add('disabled');
       const who = this.engine.state.players[occupied];
-      const c = who.color || '#888';
+      const c = this._playerColor(who);
       d.style.borderColor = c;
-      d.innerHTML = `<div class="ico" style="opacity:0.5">${ico}</div><div style="color:${c};font-size:11px;">${who.name}</div>`;
+      d.innerHTML = `<div class="ico" style="opacity:0.5">${ico}</div><div style="color:${c};font-size:11px;font-weight:700;">${who.name}</div>`;
     } else {
       d.onclick = () => this.handleActionClick(act.id);
       d.innerHTML = `<div class="ico">${ico}</div><div>${label}</div>`;
@@ -528,37 +531,43 @@ class BrowserGame {
     }
   }
 
+  _playerColor(p) {
+    return p.color || (p.id === 0 ? '#2a7ab8' : ['#c94a44', '#3f9e4a', '#c98a20'][p.id - 1] || '#6b5438');
+  }
+
   _renderPlayer(p) {
     const div = document.createElement('div');
     div.className = 'player-panel';
     div.id = `p-${p.id}`;
     if (this.engine.currentPlayer.id === p.id) div.classList.add('active');
-    if (this.engine.state.startPlayer === p.id) div.style.borderLeftColor = '#ffeb3b';
+    if (this.engine.state.startPlayer === p.id) div.style.borderLeftColor = '#c8921a';
 
     const score = this.engine.calculateScore(p);
     const rooms = p.farm.filter(t => t === 1).length;
     const fields = p.farm.filter(t => t === 2).length;
 
-    const color = p.color || (p.id === 0 ? '#29b6f6' : ['#ef5350','#66bb6a','#ffee58'][p.id-1] || '#888');
+    const color = this._playerColor(p);
 
     div.innerHTML = `
-      <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <div style="color:${color}; font-weight:bold;">
-          ${p.name} ${this.engine.state.nextStartPlayer === p.id ? '🚩' : ''}
-          <span style="font-size:11px; color:#aaa;">(工:${p.res.workers}/${p.res.maxWorkers})</span>
-          <span style="color:#ffd700; margin-left:10px;">🌟: ${score}</span>
-        </div>
+      <div class="player-head">
+        <span class="player-name" style="color:${color};">${p.name} ${this.engine.state.nextStartPlayer === p.id ? '🚩' : ''}</span>
+        <span class="player-score">🌟 ${score}</span>
+      </div>
+      <div class="player-meta">工人 ${p.res.workers}/${p.res.maxWorkers} · 房间 ${rooms} · 农田 ${fields}</div>
+      <div class="res-row">
+        <span class="res-chip">🪵 ${p.res.wood}</span>
+        <span class="res-chip">🧱 ${p.res.clay}</span>
+        <span class="res-chip">🎋 ${p.res.reed}</span>
+        <span class="res-chip">🪨 ${p.res.stone}</span>
+        <span class="res-chip">🥣 ${p.res.food}</span>
+        <span class="res-chip">🌾 ${p.res.grain}</span>
+        <span class="res-chip">🥕 ${p.res.veg}</span>
       </div>
       <div class="res-row">
-        <span>🪵${p.res.wood}</span> <span>🧱${p.res.clay}</span>
-        <span>🎋${p.res.reed}</span> <span>🪨${p.res.stone}</span> |
-        <span>🥣${p.res.food}</span> <span>🌾${p.res.grain}</span>
-        <span>🥕${p.res.veg}</span>
-      </div>
-      <div class="res-row">
-        <span>🐑${p.animals.sheep}</span> <span>🐗${p.animals.boar}</span> <span>🐮${p.animals.cow}</span>
-        <span>🏠${rooms}田${fields}</span>
-        ${p.begging > 0 ? `<span style="color:red; border:1px solid red;">🆘 ${p.begging}</span>` : ''}
+        <span class="res-chip">🐑 ${p.animals.sheep}</span>
+        <span class="res-chip">🐗 ${p.animals.boar}</span>
+        <span class="res-chip">🐮 ${p.animals.cow}</span>
+        ${p.begging > 0 ? `<span class="res-chip" style="color:#b03a20; border-color:#c94a44;">🆘 ${p.begging}</span>` : ''}
       </div>
       <div class="mini-card-container">
         ${p.majors.map(m => `<div class="mini-card major" title="${m.desc||''}">${m.name.substring(0,2)}</div>`).join('')}
@@ -577,7 +586,7 @@ class BrowserGame {
 
       const isHuman = p.id === this.humanPlayerId &&
                       (this.uiMode === 'plow' || this.uiMode === 'plow_sow' || this.uiMode === 'build_menu');
-      if (isHuman) classes.push('edit-fence');
+      if (isHuman) classes.push('clickable');
 
       let inner = '';
 
@@ -615,7 +624,7 @@ class BrowserGame {
     let html = `<h2>🎉 游戏结束!</h2>
       <table class="score-table"><tr><th>玩家</th><th>总分</th></tr>`;
     for (const p of sorted) {
-      html += `<tr><td style="color:${p.color||'#fff'}; font-weight:bold;">${p.name}</td>
+      html += `<tr><td style="color:${this._playerColor(p)}; font-weight:bold;">${p.name}</td>
         <td class="score-total">${this.engine.calculateScore(p)}</td></tr>`;
     }
     html += `</table>
