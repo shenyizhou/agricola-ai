@@ -375,9 +375,12 @@ function stagedRolloutPolicy(engine, actions) {
   const totalAnimalsPre = p.animals.sheep + p.animals.boar + p.animals.cow;
   const sownCropsPre = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
   const foodEnginePre = hasCook && (totalAnimalsPre >= 2 || sownCropsPre >= 1);
+  // Priority ladder per strategy: the FIRST room (2→3 workers) is the top
+  // building priority. Only after the food engine is stable AND there are
+  // still enough rounds left do we build a 4th/5th room; otherwise points.
   const wantBuild = (workers < 3) ||
-    (workers < 4 && foodEnginePre) ||
-    (workers < 5 && foodEnginePre && (totalAnimalsPre >= 3 || sownCropsPre >= 2));
+    (workers < 4 && foodEnginePre && round <= 9) ||
+    (workers < 5 && foodEnginePre && (totalAnimalsPre >= 3 || sownCropsPre >= 2) && round <= 7);
   if (emptyRooms === 0 && wantBuild) {
     const cost = roomCost(p.houseType);
     if (canAfford(p, cost)) {
@@ -413,6 +416,15 @@ function stagedRolloutPolicy(engine, actions) {
         if (candidates.length > 0) return candidates[0].a;
       }
     }
+  }
+
+  // 3a) Once the first room is built and we've grown to 3 workers, the food
+  //     engine becomes the top non-grow priority. Without a cooker the 3-worker
+  //     household starves; grab clay now even if it delays a 4th room.
+  if (!hasCook && workers >= 3 && p.res.clay < 2) {
+    const clayActs = actions.filter(a => a.type === 'res' && a.res === 'clay')
+      .sort((x, y) => (y.amount || 0) - (x.amount || 0));
+    if (clayActs.length > 0) return clayActs[0];
   }
 
   // 3b) Buy cooker once 2 clay available AND room is built or materials secured.
