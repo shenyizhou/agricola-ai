@@ -1,0 +1,118 @@
+[
+  {
+    "id": "Major_Fireplace1",
+    "name": "Fireplace",
+    "number": 1,
+    "type": "major",
+    "cost": {
+      "clay": 2
+    },
+    "vp": 1,
+    "desc": "[Anytime] <VEGETABLE> <ARROW> 2<FOOD>      <PIG> <ARROW> 2<FOOD> <SHEEP> <ARROW> 2<FOOD>      <CATTLE> <ARROW> 3<FOOD> [__Bake Bread__ action:] <GRAIN> <ARROW> 2<FOOD>"
+  },
+  {
+    "id": "Major_Fireplace2",
+    "name": "Fireplace",
+    "number": 2,
+    "type": "major",
+    "cost": {
+      "clay": 3
+    },
+    "vp": 1,
+    "desc": "[Anytime] <VEGETABLE> <ARROW> 2<FOOD>      <PIG> <ARROW> 2<FOOD> <SHEEP> <ARROW> 2<FOOD>      <CATTLE> <ARROW> 3<FOOD> [__Bake Bread__ action:] <GRAIN> <ARROW> 2<FOOD>"
+  },
+  {
+    "id": "Major_CookingHearth1",
+    "name": "Cooking Hearth",
+    "number": 3,
+    "type": "major",
+    "cost": {
+      "clay": 4
+    },
+    "vp": 1,
+    "desc": "[Anytime] <VEGETABLE> <ARROW> 3<FOOD>      <PIG> <ARROW> 3<FOOD> <SHEEP> <ARROW> 2<FOOD>      <CATTLE> <ARROW> 4<FOOD> [__Bake Bread__ action:] <GRAIN> <ARROW> 3<FOOD>"
+  },
+  {
+    "id": "Major_CookingHearth2",
+    "name": "Cooking Hearth",
+    "number": 4,
+    "type": "major",
+    "cost": {
+      "clay": 5
+    },
+    "vp": 1,
+    "desc": "[Anytime] <VEGETABLE> <ARROW> 3<FOOD>      <PIG> <ARROW> 3<FOOD> <SHEEP> <ARROW> 2<FOOD>      <CATTLE> <ARROW> 4<FOOD> [__Bake Bread__ action:] <GRAIN> <ARROW> 3<FOOD>"
+  },
+  {
+    "id": "Major_Well",
+    "name": "Well",
+    "number": 5,
+    "type": "major",
+    "cost": {
+      "wood": 1,
+      "stone": 3
+    },
+    "vp": 4,
+    "desc": "[Put 1 <FOOD> on the 5 next turns. At the start of each turn, collect the <FOOD>]"
+  },
+  {
+    "id": "Major_ClayOven",
+    "name": "Clay Oven",
+    "number": 6,
+    "type": "major",
+    "cost": {
+      "clay": 3,
+      "stone": 1
+    },
+    "vp": 2,
+    "desc": "[__Bake Bread__ action:] <GRAIN> <ARROW-1X> 5<FOOD> [When you build it, you can Bake immediatly]"
+  },
+  {
+    "id": "Major_StoneOven",
+    "name": "Stone Oven",
+    "number": 7,
+    "type": "major",
+    "cost": {
+      "clay": 1,
+      "stone": 3
+    },
+    "vp": 3,
+    "desc": "[__Bake Bread__ action:] <GRAIN> <ARROW-2X> 4<FOOD> [When you build it, you can Bake immediatly]"
+  },
+  {
+    "id": "Major_Joinery",
+    "name": "Joinery",
+    "number": 8,
+    "type": "major",
+    "cost": {
+      "wood": 2,
+      "stone": 2
+    },
+    "vp": 2,
+    "desc": "[Harvest] <WOOD> <ARROW-1X> 2<FOOD> [Scoring] 3/5/7<WOOD> <ARROW-1X> 1/2/3<SCORE>"
+  },
+  {
+    "id": "Major_Pottery",
+    "name": "Pottery",
+    "number": 9,
+    "type": "major",
+    "cost": {
+      "clay": 2,
+      "stone": 2
+    },
+    "vp": 2,
+    "desc": "[Harvest] <CLAY> <ARROW-1X> 2<FOOD> [Scoring] 3/5/7<CLAY> <ARROW-1X> 1/2/3<SCORE>"
+  },
+  {
+    "id": "Major_Basket",
+    "name": "Basketmaker\\'s Workshop",
+    "number": 10,
+    "type": "major",
+    "cost": {
+      "reed": 2,
+      "stone": 2
+    },
+    "vp": 2,
+    "desc": "[Harvest] <REED> <ARROW-1X> 3<FOOD> [Scoring] 2/4/5<REED> <ARROW-1X> 1/2/3<SCORE>"
+  }
+]

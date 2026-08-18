@@ -1,0 +1,18 @@
+{
+  "total": 1069,
+  "byType": {
+    "occupation": 554,
+    "minor": 505,
+    "major": 10
+  },
+  "byDeck": {
+    "A": 180,
+    "B": 180,
+    "C": 181,
+    "D": 180,
+    "E": 169,
+    "R": 169,
+    "Major": 10
+  },
+  "implemented": 63
+}

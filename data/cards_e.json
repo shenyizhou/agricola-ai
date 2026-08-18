@@ -1,0 +1,1875 @@
+[
+  {
+    "id": "E1_PoleBarns",
+    "name": "Pole Barns",
+    "deck": "E",
+    "number": 1,
+    "type": "minor",
+    "category": "PASSING_-_FARMYARD",
+    "cost": {
+      "wood": 2
+    },
+    "desc": "You can immediately build up to 3 stables at no cost. (You must pay the cost of this card though.)",
+    "prerequisite": "15 Fences Built"
+  },
+  {
+    "id": "E2_RenovationMaterials",
+    "name": "Renovation Materials",
+    "deck": "E",
+    "number": 2,
+    "type": "minor",
+    "category": "PASSING_-_ACTION_-_FARMYARD",
+    "cost": {
+      "clay": 3,
+      "reed": 1
+    },
+    "desc": "Immediately renovate to clay at no cost. (You must pay the cost of this card though.)",
+    "prerequisite": "Wooden House",
+    "implemented": true
+  },
+  {
+    "id": "E3_TeaTime",
+    "name": "Tea Time",
+    "deck": "E",
+    "number": 3,
+    "type": "minor",
+    "category": "PASSING_-_ACTION_-_FARMYARD",
+    "cost": {
+      "food": 1
+    },
+    "desc": "Immediately return your person on the __Grain Utilization__ action space home; you can place it again later this round.",
+    "prerequisite": "Own Person on Grain Utilization"
+  },
+  {
+    "id": "E4_Thunderbolt",
+    "name": "Thunderbolt",
+    "deck": "E",
+    "number": 4,
+    "type": "minor",
+    "category": "PASSING_-_IMPROVEMENT/OCC_-_WOOD",
+    "desc": "Immediately remove all <GRAIN> from one of your fields to the general supply. Gain 2 <WOOD> for each <GRAIN> you just removed.",
+    "prerequisite": "1 Grain Field"
+  },
+  {
+    "id": "E5_NightLoot",
+    "name": "Night Loot",
+    "deck": "E",
+    "number": 5,
+    "type": "minor",
+    "category": "PASSING_-_BUILDING_RESOURCES_",
+    "cost": {
+      "food": 2
+    },
+    "desc": "Immediately remove 2 different building resources total from accumulation spaces and place them in your supply."
+  },
+  {
+    "id": "E6_Recount",
+    "name": "Recount",
+    "deck": "E",
+    "number": 6,
+    "type": "minor",
+    "category": "PASSING_-_BUILDING_RESOURCES_",
+    "desc": "You immediately get 1 building resource of each type of which you have 4 or more resources in your supply already."
+  },
+  {
+    "id": "E7_Pumpernickel",
+    "name": "Pumpernickel",
+    "deck": "E",
+    "number": 7,
+    "type": "minor",
+    "category": "PASSING_-_FOOD",
+    "cost": {
+      "grain": 1
+    },
+    "desc": "You immediately get 4 <FOOD>. (Effectively, you are turning 1 <GRAIN> into 4 <FOOD>.)"
+  },
+  {
+    "id": "E8_FarmersMarket",
+    "name": "Farmers Market",
+    "deck": "E",
+    "number": 8,
+    "type": "minor",
+    "category": "PASSING_-_CROP",
+    "cost": {
+      "food": 2
+    },
+    "desc": "You immediately get 1 <VEGETABLE>. (Effectively, you are buying 1 <VEGETABLE> for 2 <FOOD>.)"
+  },
+  {
+    "id": "E9_BarteringHut",
+    "name": "Bartering Hut",
+    "deck": "E",
+    "number": 9,
+    "type": "minor",
+    "category": "PASSING_-_ANIMAL",
+    "desc": "Up to two times: Immediately spend any 2/3/4 building resources for 1 <SHEEP>/<PIG>/<CATTLE> from the general supply."
+  },
+  {
+    "id": "E10_StrawHat",
+    "name": "Straw Hat",
+    "deck": "E",
+    "number": 10,
+    "type": "minor",
+    "category": "ACTION_-_GUEST",
+    "cost": {
+      "reed": 1
+    },
+    "desc": "At the end of the work phases of rounds 3 and 6, you can move your person from the __Farmland__ action space to an unoccupied action space and take that action, or get 1 <FOOD>."
+  },
+  {
+    "id": "E11_PettingZoo",
+    "name": "Petting Zoo",
+    "deck": "E",
+    "number": 11,
+    "type": "minor",
+    "category": "FARMYARD_-_PLACE_FOR_ANIMALS",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "As long as you have a pasture orthogonally adjacent to your house, you can keep animals of any type on this card, up to the number of rooms in your house."
+  },
+  {
+    "id": "E12_AnimalBedding",
+    "name": "Animal Bedding",
+    "deck": "E",
+    "number": 12,
+    "type": "minor",
+    "category": "FARMYARD_-_PLACE_FOR_ANIMALS",
+    "vp": 1,
+    "desc": "You can keep 1 additional animal (of the same type) in each of your unfenced stables, and 2 additional animals (of the same type) in each pasture with stable.",
+    "prerequisite": "1 Grain Field",
+    "implemented": true
+  },
+  {
+    "id": "E13_StoneHouseReconstruction",
+    "name": "Stone House Reconstruction",
+    "deck": "E",
+    "number": 13,
+    "type": "minor",
+    "category": "FARMYARD_-_HOUSE_BUILDING_OR_RENOVATION",
+    "cost": {
+      "stone": 1
+    },
+    "vp": 1,
+    "desc": "At any time, you can renovate your clay house to a stone house without placing a person. (You must pay the normal renovation cost.)",
+    "implemented": true
+  },
+  {
+    "id": "E14_WoodSaw",
+    "name": "Wood Saw",
+    "deck": "E",
+    "number": 14,
+    "type": "minor",
+    "category": "FARMYARD_-_HOUSE_BUILDING_OR_RENOVATION",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each time all other players have more people than you, you can take a __Build Rooms__ action without placing a person.",
+    "implemented": true
+  },
+  {
+    "id": "E15_NailBasket",
+    "name": "Nail Basket",
+    "deck": "E",
+    "number": 15,
+    "type": "minor",
+    "category": "FARMYARD_-__FENCING_OR_STABLE_BUILDING",
+    "cost": {
+      "reed": 1
+    },
+    "vp": 1,
+    "desc": "Each time after you use a wood accumulation space, you can place 1 <STONE> from your supply on that space (for the next visitor) to take a __Build Fences__ action."
+  },
+  {
+    "id": "E16_BriarHedge",
+    "name": "Briar Hedge",
+    "deck": "E",
+    "number": 16,
+    "type": "minor",
+    "category": "FARMYARD_-__FENCING_OR_STABLE_BUILDING",
+    "desc": "You do not need to pay wood for fences that you build on the edge of your farmyard board.",
+    "prerequisite": "1 Animal of Each Type",
+    "implemented": true
+  },
+  {
+    "id": "E17_SkimmerPlow",
+    "name": "Skimmer Plow",
+    "deck": "E",
+    "number": 17,
+    "type": "minor",
+    "category": "FARMYARD_-_PLOWING",
+    "cost": {
+      "wood": 1
+    },
+    "vp": 0,
+    "desc": "Each time you use the __Farmland__ or __Cultivation__  action space, you can plow 2 fields instead of 1. Each time you sow, you must place 1 fewer good on each field you sow.",
+    "prerequisite": "2 Occupations"
+  },
+  {
+    "id": "E18_SeedAlmanac",
+    "name": "Seed Almanac",
+    "deck": "E",
+    "number": 18,
+    "type": "minor",
+    "category": "FARMYARD_-_PLOWING",
+    "cost": {
+      "reed": 1
+    },
+    "desc": "Each time after you play a minor improvement after this one, you can pay 1 <FOOD> to plow 1 field.",
+    "prerequisite": "4 Occupations"
+  },
+  {
+    "id": "E19_OxGoad",
+    "name": "Ox Goad",
+    "deck": "E",
+    "number": 19,
+    "type": "minor",
+    "category": "FARMYARD_-_PLOWING",
+    "cost": {
+      "wood": 1
+    },
+    "vp": 1,
+    "desc": "Each time after you use the __Cattle Market__ accumulation space, you can pay 2 <FOOD> to plow 1 field.",
+    "prerequisite": "3 Occupations"
+  },
+  {
+    "id": "E20_IronHoe",
+    "name": "Iron Hoe",
+    "deck": "E",
+    "number": 20,
+    "type": "minor",
+    "category": "FARMYARD_-_PLOWING",
+    "cost": {
+      "wood": 1
+    },
+    "vp": 0,
+    "desc": "At the end of each work phase, if you occupy both the __Grain Seeds__ and __Vegetable Seeds__ action spaces, you can plow 1 field."
+  },
+  {
+    "id": "E21_SheepRug",
+    "name": "Sheep Rug",
+    "deck": "E",
+    "number": 21,
+    "type": "minor",
+    "category": "ACTION_-_FAMILY_GROWTH",
+    "cost": {
+      "sheep": 1
+    },
+    "vp": 1,
+    "desc": "You can use any __Wish for Children__ action space, even if it is occupied by another player\\'s person.",
+    "prerequisite": "4 Sheep"
+  },
+  {
+    "id": "E22_GuestRoom",
+    "name": "Guest Room",
+    "deck": "E",
+    "number": 22,
+    "type": "minor",
+    "category": "FARMYARD_-_PLACE_FOR_PERSON",
+    "cost": {
+      "wood": 4,
+      "reed": 1
+    },
+    "desc": "Immediately place any amount of <FOOD> from your supply on this card. Once per round, you can discard 1 <FOOD> from this card to place a person from your supply in that round."
+  },
+  {
+    "id": "E23_Apiary",
+    "name": "Apiary",
+    "deck": "E",
+    "number": 23,
+    "type": "minor",
+    "category": "ACTION",
+    "desc": "At the end of each work phase, you can sow exactly 1 crop on 1 field.",
+    "prerequisite": "4 Occupations",
+    "implemented": true
+  },
+  {
+    "id": "E24_Ambition",
+    "name": "Ambition",
+    "deck": "E",
+    "number": 24,
+    "type": "minor",
+    "category": "ACTION",
+    "desc": "Each time you get a __Minor Improvement__ action on an action space, you can build a major improvement instead of playing a minor one.",
+    "prerequisite": "2 Occupations"
+  },
+  {
+    "id": "E25_BumperCrop",
+    "name": "Bumper Crop",
+    "deck": "E",
+    "number": 25,
+    "type": "minor",
+    "category": "ACTION",
+    "vp": 1,
+    "desc": "When you play this card, immediately play the field phase of the harvest on your farmyard only.",
+    "prerequisite": "2 Grain Fields",
+    "implemented": false
+  },
+  {
+    "id": "E26_Sundial",
+    "name": "Sundial",
+    "deck": "E",
+    "number": 26,
+    "type": "minor",
+    "category": "ACTION",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "At the end of the work phases of rounds 7 and 9, you can take a __Sow__ action without placing a person."
+  },
+  {
+    "id": "E27_PiggyBank",
+    "name": "Piggy Bank",
+    "deck": "E",
+    "number": 27,
+    "type": "minor",
+    "category": "ACTION_-_IMPROVEMENT",
+    "desc": "At the end of each work phase, you can place 1 <FOOD> on this card, irretrievably. At any time, you can discard 6 <FOOD> from this card to build a major improvement at no cost."
+  },
+  {
+    "id": "E28_Bookmark",
+    "name": "Bookmark",
+    "deck": "E",
+    "number": 28,
+    "type": "minor",
+    "category": "ACTION_-_OCCUPATION",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Add 3 to the current round and mark the corresponding round space. At the start of that round, you can play 1 occupation without paying an occupation cost."
+  },
+  {
+    "id": "E29_Heirloom",
+    "name": "Heirloom",
+    "deck": "E",
+    "number": 29,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "vp": 2,
+    "desc": "(This card has no additional effect.)",
+    "prerequisite": "Your Person on Day Laborer",
+    "implemented": true
+  },
+  {
+    "id": "E30_ChildsToy",
+    "name": "Child's Toy",
+    "deck": "E",
+    "number": 30,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "vp": 2,
+    "desc": "During the feeding phase of each harvest, your newborns require 2 <FOOD> (instead of 1).",
+    "prerequisite": "Exactly 2 Adults"
+  },
+  {
+    "id": "E31_Upholstery",
+    "name": "Upholstery",
+    "deck": "E",
+    "number": 31,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "Each time you build or play an improvement after this one, you can place 1 <REED> on this card, irretrievably, to get 1 bonus <SCORE>, up to the number of rooms in your house."
+  },
+  {
+    "id": "E32_Nave",
+    "name": "Nave",
+    "deck": "E",
+    "number": 32,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "cost": {
+      "stone": 2,
+      "reed": 1
+    },
+    "desc": "During scoring, you get 1 bonus <SCORE> for each of the 5 columns of your farmyard board containing at least one room."
+  },
+  {
+    "id": "E33_BeaverColony",
+    "name": "Beaver Colony",
+    "deck": "E",
+    "number": 33,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "vp": 1,
+    "desc": "From now on, one of your pastures with stable cannot hold animals. Each time you get <REED> from an action space, you get 1 bonus <SCORE>.",
+    "prerequisite": "1 Fenced Stable"
+  },
+  {
+    "id": "E34_LandRegister",
+    "name": "Land Register",
+    "deck": "E",
+    "number": 34,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "During scoring, if your farm has no unused spaces, you get 2 bonus <SCORE>."
+  },
+  {
+    "id": "E35_Misanthropy",
+    "name": "Misanthropy",
+    "deck": "E",
+    "number": 35,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "During scoring, if you have exactly 4/3/2 people, you get 2/3/5 bonus <SCORE>."
+  },
+  {
+    "id": "E36_HerbalGarden",
+    "name": "Herbal Garden",
+    "deck": "E",
+    "number": 36,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "cost": {
+      "wood": 1
+    },
+    "vp": 2,
+    "desc": "From now on, at least one of your pastures must contain no animals.",
+    "prerequisite": "1 Pasture"
+  },
+  {
+    "id": "E37_OxSkull",
+    "name": "Ox Skull",
+    "deck": "E",
+    "number": 37,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "During scoring, if you have no <CATTLE>, you get 3 bonus <SCORE>.",
+    "prerequisite": "1 cattle"
+  },
+  {
+    "id": "E38_RodCollection",
+    "name": "Rod Collection",
+    "deck": "E",
+    "number": 38,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "vp": 1,
+    "desc": "Each time you use __Fishing__, you can place up to 2 <WOOD> on this card, irretrievably. During scoring, each such <WOOD> is worth 1 bonus <SCORE>, except the 1st, 4th, 7th, and 10th.",
+    "prerequisite": "3 Occupations"
+  },
+  {
+    "id": "E39_Paintbrush",
+    "name": "Paintbrush",
+    "deck": "E",
+    "number": 39,
+    "type": "minor",
+    "category": "BONUS_POINTS_-_GET",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each harvest, you can exchange exactly 1 <CLAY> for your choice of 2 <FOOD> or 1 bonus <SCORE>.",
+    "prerequisite": "1 pig"
+  },
+  {
+    "id": "E40_BeeStatue",
+    "name": "Bee Statue",
+    "deck": "E",
+    "number": 40,
+    "type": "minor",
+    "category": "GOODS_-_GET",
+    "cost": {
+      "clay": 2
+    },
+    "desc": "Pile (from bottom to top) 1 <VEGETABLE>, 1 <STONE>, 1 <GRAIN>, 1 <STONE>, 1 <GRAIN> on this card. Each time you use the __Day Laborer__ action space, you get the top good."
+  },
+  {
+    "id": "E41_MuddyWaters",
+    "name": "Muddy Waters",
+    "deck": "E",
+    "number": 41,
+    "type": "minor",
+    "category": "GOODS_-_GET",
+    "vp": 1,
+    "desc": "Alternate placing 1 <FOOD> and 1 <CLAY> on each remaining even-numbered round space, starting with <FOOD>. At the start of these rounds, you get the respective good.",
+    "prerequisite": "5 Cards in Play"
+  },
+  {
+    "id": "E42_WaterGully",
+    "name": "Water Gully",
+    "deck": "E",
+    "number": 42,
+    "type": "minor",
+    "category": "GOODS_-_GET",
+    "cost": {
+      "stone": 1
+    },
+    "desc": "Place 1 <CATTLE>, 1 <GRAIN>, and 1 <CATTLE> on the next 3 round spaces (in that order). At the start of these rounds, you get the respective good.",
+    "prerequisite": "Major Well"
+  },
+  {
+    "id": "E43_BarnCats",
+    "name": "Barn Cats",
+    "deck": "E",
+    "number": 43,
+    "type": "minor",
+    "category": "FOOD_-_FUTURE_ROUND_SPACES",
+    "vp": 1,
+    "desc": "If you have 1/2/3/4 stables, place 1 <FOOD> on each of the next 2/3/4/5 round spaces. At the start of these rounds, you get the <FOOD>.",
+    "prerequisite": "1 Stable"
+  },
+  {
+    "id": "E44_FodderBeets",
+    "name": "Fodder Beets",
+    "deck": "E",
+    "number": 44,
+    "type": "minor",
+    "category": "FOOD_-_FUTURE_ROUND_SPACES",
+    "vp": 1,
+    "desc": "Place 1 <FOOD> on each remaining odd-numbered round space. At the start of these rounds, you get the <FOOD>.",
+    "prerequisite": "3 Field Tiles",
+    "implemented": true
+  },
+  {
+    "id": "E45_FruitLadder",
+    "name": "Fruit Ladder",
+    "deck": "E",
+    "number": 45,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 2
+    },
+    "vp": 1,
+    "desc": "Place 1 <FOOD> on each remaining even-numbered round space. At the start of these rounds, you get the <FOOD>."
+  },
+  {
+    "id": "E46_WaterlilyPond",
+    "name": "Waterlily Pond",
+    "deck": "E",
+    "number": 46,
+    "type": "minor",
+    "category": "FOOD_-_FUTURE_ROUND_SPACES",
+    "vp": 1,
+    "desc": "Place 1 <FOOD> on each of the next 2 round spaces. At the start of these rounds, you get the <FOOD>.",
+    "prerequisite": "Exactly 2 Occupations"
+  },
+  {
+    "id": "E47_SyrupTap",
+    "name": "Syrup Tap",
+    "deck": "E",
+    "number": 47,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 1,
+      "stone": 1
+    },
+    "vp": 1,
+    "desc": "Each time you get at least 1 <WOOD> from an action space, place 1 <FOOD> on the next round space. At the start of that round, you get the <FOOD>."
+  },
+  {
+    "id": "E48_TownHall",
+    "name": "Town Hall",
+    "deck": "E",
+    "number": 48,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 2,
+      "clay": 2
+    },
+    "vp": 2,
+    "desc": "In the feeding phase of each harvest, if you live in a clay or stone house, you get 1 or 2 <FOOD>, respectively."
+  },
+  {
+    "id": "E49_Twibil",
+    "name": "Twibil",
+    "deck": "E",
+    "number": 49,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "stone": 1
+    },
+    "vp": 1,
+    "desc": "Each time after any player (including you) builds at least 1 wood room, you get 1 <FOOD>."
+  },
+  {
+    "id": "E50_WildGreens",
+    "name": "Wild Greens",
+    "deck": "E",
+    "number": 50,
+    "type": "minor",
+    "category": "FOOD",
+    "desc": "Each time you sow, you get 1 <FOOD> for every different type of good that you sow.",
+    "implemented": true
+  },
+  {
+    "id": "E51_WhaleOil",
+    "name": "Whale Oil",
+    "deck": "E",
+    "number": 51,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each time you use __Fishing__, place 1 <FOOD> from the general supply on this card. Each time before you play an occupation, you get <FOOD> equal to the amount on this card."
+  },
+  {
+    "id": "E52_Cubbyhole",
+    "name": "Cubbyhole",
+    "deck": "E",
+    "number": 52,
+    "type": "minor",
+    "category": "FOOD",
+    "vp": 1,
+    "desc": "For each room that you add to your house, place 1 <FOOD> from the general supply on this card. At the start of each feeding phase, you get <FOOD> equal to the amount on this card."
+  },
+  {
+    "id": "E53_BoarSpear",
+    "name": "Boar Spear",
+    "deck": "E",
+    "number": 53,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 1,
+      "stone": 1
+    },
+    "vp": 1,
+    "desc": "Each time you get at least 1 <PIG> outside of the breeding phase of a harvest, you can immediately turn them into 4 <FOOD> each."
+  },
+  {
+    "id": "E54_Contraband",
+    "name": "Contraband",
+    "deck": "E",
+    "number": 54,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "food": 1
+    },
+    "desc": "Each time you play or build an improvement after this, you can pay 1 additional building resource of a type in the printed cost to get 3 <FOOD>."
+  },
+  {
+    "id": "E55_StoneWeir",
+    "name": "Stone Weir",
+    "deck": "E",
+    "number": 55,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "stone": 1
+    },
+    "vp": 1,
+    "desc": "Each time you use the __Fishing__ accumulation space, if there are 0/1/2/3 <FOOD> on the space, you get an additional 4/3/2/1 <FOOD> from the general supply.",
+    "prerequisite": "2 Occupations"
+  },
+  {
+    "id": "E56_RomanPot",
+    "name": "Roman Pot",
+    "deck": "E",
+    "number": 56,
+    "type": "minor",
+    "category": "FOOD_-_FUTURE_ROUND_SPACES",
+    "cost": {
+      "clay": 1
+    },
+    "vp": 1,
+    "desc": "Place 4 <FOOD> from the general supply on this card. At the start of each work phase, if you are the last player in turn order, move 1 <FOOD> from this card to your supply."
+  },
+  {
+    "id": "E57_CheeseFondue",
+    "name": "Cheese Fondue",
+    "deck": "E",
+    "number": 57,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "clay": 1
+    },
+    "vp": 1,
+    "desc": "Each time you bake at least 1 <GRAIN> into bread, you get 1 additional <FOOD> if you have at least 1 <SHEEP> and (another) 1 additional <FOOD> if you have at least 1 <CATTLE>."
+  },
+  {
+    "id": "E58_LunchtimeBeer",
+    "name": "Lunchtime Beer",
+    "deck": "E",
+    "number": 58,
+    "type": "minor",
+    "category": "FOOD",
+    "desc": "At the start of each harvest, you can choose to skip the field and breeding phase of that harvest and get exactly 1 food instead.",
+    "implemented": false
+  },
+  {
+    "id": "E59_CombandCutter",
+    "name": "Comb and Cutter",
+    "deck": "E",
+    "number": 59,
+    "type": "minor",
+    "category": "FOOD",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each time you use the __Day Laborer__ action space, you get 1 additional <FOOD> for each <SHEEP> on the __Sheep Market__ accumulation space, up to a maximum of 4 additional <FOOD>."
+  },
+  {
+    "id": "E60_WorkingGloves",
+    "name": "Working Gloves",
+    "deck": "E",
+    "number": 60,
+    "type": "minor",
+    "category": "FOOD_-_CONVERT",
+    "desc": "When you play this card, you get 1 <FOOD>. Each time you pay an occupation cost, you can pay 1 building resource (exclude <STONE>) of your choice in place of (up to) 2 <FOOD>.",
+    "implemented": false
+  },
+  {
+    "id": "E61_RaisedBed",
+    "name": "Raised Bed",
+    "deck": "E",
+    "number": 61,
+    "type": "minor",
+    "category": "FOOD_-_GRAIN",
+    "cost": {
+      "clay": 2,
+      "stone": 2
+    },
+    "vp": 1,
+    "desc": "At the start of each harvest, you get 4 <FOOD>.",
+    "prerequisite": "2 Grain Fields"
+  },
+  {
+    "id": "E62_SourDough",
+    "name": "Sour Dough",
+    "deck": "E",
+    "number": 62,
+    "type": "minor",
+    "category": "FOOD_-_GRAIN",
+    "vp": 1,
+    "desc": "Once per round, if all players have at least 1 person left to place, you can skip placing a person and take a __Bake Bread__ action instead.",
+    "prerequisite": "3 Occupations and 1 Baking Improvement"
+  },
+  {
+    "id": "E63_IronOven",
+    "name": "Iron Oven",
+    "deck": "E",
+    "number": 63,
+    "type": "minor",
+    "category": "FOOD_-_GRAIN",
+    "cost": {
+      "stone": 3
+    },
+    "vp": 2,
+    "desc": "[__Bake Bread__ action:] <GRAIN> <ARROW-1X> 6<FOOD> When you play this card, you can immediately take a __Bake Bread__ action.",
+    "implemented": true
+  },
+  {
+    "id": "E64_SimpleOven",
+    "name": "Simple Oven",
+    "deck": "E",
+    "number": 64,
+    "type": "minor",
+    "category": "FOOD_-_GRAIN",
+    "cost": {
+      "clay": 2
+    },
+    "vp": 1,
+    "desc": "[__Bake Bread__ action:] <GRAIN> <ARROW-1X> 3<FOOD> When you play this card, you can immediately take a __Bake Bread__ action.",
+    "implemented": true
+  },
+  {
+    "id": "E65_Almsbag",
+    "name": "Almsbag",
+    "deck": "E",
+    "number": 65,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN",
+    "desc": "When you play this card, you immediately get 1 <GRAIN> for every 2 completed rounds.",
+    "prerequisite": "No Occupations",
+    "implemented": true
+  },
+  {
+    "id": "E66_BarnShed",
+    "name": "Barn Shed",
+    "deck": "E",
+    "number": 66,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN",
+    "cost": {
+      "wood": 2
+    },
+    "desc": "Each time another player (or, in a solo game, you) uses the __Forest__ accumulation space, you get 1 <GRAIN>.",
+    "prerequisite": "3 Occupations"
+  },
+  {
+    "id": "E67_GrainBag",
+    "name": "Grain Bag",
+    "deck": "E",
+    "number": 67,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN",
+    "cost": {
+      "reed": 1
+    },
+    "vp": 1,
+    "desc": "Each time you use the __Grain Seeds__ action space, you get 1 additional <GRAIN> for each <BAKE>-improvement you have."
+  },
+  {
+    "id": "E68_CherryOrchard",
+    "name": "Cherry Orchard",
+    "deck": "E",
+    "number": 68,
+    "type": "minor",
+    "category": "CROPS_-_VEGETABLE",
+    "desc": "This card is a field on which you can only sow and harvest wood as you would grain. Each time you harvest the last <WOOD> from this card, you also get 1 <VEGETABLE>."
+  },
+  {
+    "id": "E69_MelonPatch",
+    "name": "Melon Patch",
+    "deck": "E",
+    "number": 69,
+    "type": "minor",
+    "category": "CROPS_-_VEGETABLE",
+    "desc": "This card is a field that can only grow vegetables. Each time you harvest the last <VEGETABLE> from this card, you can plow 1 field.",
+    "prerequisite": "2 Occupations"
+  },
+  {
+    "id": "E70_CropRotationField",
+    "name": "Crop Rotation Field",
+    "deck": "E",
+    "number": 70,
+    "type": "minor",
+    "category": "CROPS_-_VEGETABLE",
+    "desc": "This card is a field. Each time you remove the last <GRAIN> or <VEGETABLE> from this card, you can immediately sow <VEGETABLE> or <GRAIN> on this card, respectively.",
+    "prerequisite": "1 Occupation"
+  },
+  {
+    "id": "E71_CowPatty",
+    "name": "Cow Patty",
+    "deck": "E",
+    "number": 71,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN_AND_VEGETABLE",
+    "vp": 1,
+    "desc": "Each time you sow in a field that is orthogonally adjacent to a pasture, you can place 1 additional good of the planted type in it.",
+    "prerequisite": "1 Cattle"
+  },
+  {
+    "id": "E72_ArtichokeField",
+    "name": "Artichoke Field",
+    "deck": "E",
+    "number": 72,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN_AND_VEGETABLE",
+    "cost": {
+      "wood": 1
+    },
+    "vp": 1,
+    "desc": "This card is a field. During the field phase of each harvest, if you harvest at least 1 good from this card, you also get 1 <FOOD>.",
+    "prerequisite": "2 Occupations"
+  },
+  {
+    "id": "E73_Scythe",
+    "name": "Scythe",
+    "deck": "E",
+    "number": 73,
+    "type": "minor",
+    "category": "CROPS_-_GRAIN_AND_VEGETABLE",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "During the field phase of each harvest, you can select exactly one of your fields and harvest all the crops planted in it."
+  },
+  {
+    "id": "E74_AshTrees",
+    "name": "Ash Trees",
+    "deck": "E",
+    "number": 74,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_WOOD",
+    "desc": "When you play this card, immediately place (up to) 5 fences from your supply on it. When you build fences, fences taken from this card cost you nothing.",
+    "prerequisite": "2 Planted Fields"
+  },
+  {
+    "id": "E75_StoneAxe",
+    "name": "Stone Axe",
+    "deck": "E",
+    "number": 75,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_WOOD",
+    "cost": {
+      "wood": 1,
+      "clay": 1
+    },
+    "vp": 1,
+    "desc": "Each time you use a wood accumulation space, you can return 1 <STONE> to the general supply to get an additional 3 <WOOD>.",
+    "prerequisite": "2 Occupations",
+    "implemented": true
+  },
+  {
+    "id": "E76_LumberPile",
+    "name": "Lumber Pile",
+    "deck": "E",
+    "number": 76,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_WOOD_OR_CLAY",
+    "desc": "When you play this card, you can immediately return up to 3 <STABLE> from your farmyard board to your supply and get 3 <WOOD> for each."
+  },
+  {
+    "id": "E77_Mattock",
+    "name": "Mattock",
+    "deck": "E",
+    "number": 77,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_CLAY",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each time you get <REED> and/or <STONE> from an action space, you get 1 additional <CLAY>."
+  },
+  {
+    "id": "E78_SleightofHand",
+    "name": "Sleight of Hand",
+    "deck": "E",
+    "number": 78,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_REED",
+    "desc": "When you play this card, you can immediately exchange up to 4 building resources for an equal number of other building resources.",
+    "prerequisite": "3 Occupations"
+  },
+  {
+    "id": "E79_FieldSpade",
+    "name": "Field Spade",
+    "deck": "E",
+    "number": 79,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_STONE",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "Each time after you sow in at least 1 field, you get 1 <STONE>."
+  },
+  {
+    "id": "E80_RockGarden",
+    "name": "Rock Garden",
+    "deck": "E",
+    "number": 80,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_STONE",
+    "desc": "You can only plant <STONE> on this card. Plant as though it were 3 fields, but it is considered 1 field. Sow and harvest <STONE> on this card as you would vegetables.",
+    "implemented": false
+  },
+  {
+    "id": "E81_AlchemistsLab",
+    "name": "Alchemists Lab",
+    "deck": "E",
+    "number": 81,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_ALL",
+    "vp": 1,
+    "desc": "This card is an action space for all. A player who uses it gets 1 building resource of each type they already have. If another player uses it, they must first pay you 1 <FOOD>.",
+    "prerequisite": "3 Occupations"
+  },
+  {
+    "id": "E82_Profiteering",
+    "name": "Profiteering",
+    "deck": "E",
+    "number": 82,
+    "type": "minor",
+    "category": "BUILDING_RESOURCES_-_ALL",
+    "desc": "When you play this card, you immediately get 1 <FOOD>. Each time you use the __Day Laborer__ action space, you can exchange 1 building resource for another building resource.",
+    "implemented": true
+  },
+  {
+    "id": "E83_ShepherdsWhistle",
+    "name": "Shepherd's Whistle",
+    "deck": "E",
+    "number": 83,
+    "type": "minor",
+    "category": "ANIMALS_",
+    "cost": {
+      "wood": 1
+    },
+    "desc": "At the start of the breeding phase of each harvest, if you have at least 1 unfenced stable without an animal, you get 1 <SHEEP>.",
+    "implemented": true
+  },
+  {
+    "id": "E84_DollysMother",
+    "name": "Dolly's Mother",
+    "deck": "E",
+    "number": 84,
+    "type": "minor",
+    "category": "ANIMALS_",
+    "vp": 1,
+    "desc": "You only require 1 <SHEEP> to breed sheep during the breeding phase of a harvest. This card can hold 1 <SHEEP>.",
+    "prerequisite": "1 Sheep",
+    "implemented": true
+  },
+  {
+    "id": "E85_MasterTanner",
+    "name": "Master Tanner",
+    "deck": "E",
+    "number": 85,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLACE_FOR_PERSON",
+    "desc": "For each wild boar or cattle you turn into food, you can place 1 of that food on this card. While its food equals your number of rooms, this card provides room for 1 person.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E86_PenBuilder",
+    "name": "Pen Builder",
+    "deck": "E",
+    "number": 86,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLACE_FOR_ANIMALS",
+    "desc": "At any time, you can discard 1 <WOOD> from your supply. This card can hold two animals of any type for each <WOOD> discarded this way.",
+    "players": "1+"
+  },
+  {
+    "id": "E87_MasterRenovator",
+    "name": "Master Renovator",
+    "deck": "E",
+    "number": 87,
+    "type": "occupation",
+    "category": "FARMYARD_-_HOUSE_BUILDING_OR_RENOVATION",
+    "desc": "At the end of the work phases of rounds 7 and 9, you can take a __Renovation__ action without placing a person and pay 1 building resource of your choice less.",
+    "players": "1+"
+  },
+  {
+    "id": "E88_MasterFencer",
+    "name": "Master Fencer",
+    "deck": "E",
+    "number": 88,
+    "type": "occupation",
+    "category": "FARMYARD_-_FENCING",
+    "desc": "Once you live in a stone house, at the start of each round, you can pay 2 or 3 <WOOD> to build up to 3 or 4 fences, respectively.",
+    "players": "1+"
+  },
+  {
+    "id": "E89_Stallwright",
+    "name": "Stallwright",
+    "deck": "E",
+    "number": 89,
+    "type": "occupation",
+    "category": "FARMYARD_-_STABLE_BUILDING",
+    "desc": "After you play your 2nd, 3rd, 5th, and 7th occupation (including this one), you can build 1 stable at no cost.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E90_DungCollector",
+    "name": "Dung Collector",
+    "deck": "E",
+    "number": 90,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLOWING",
+    "desc": "Each time you get 2 or more newborn animals, you can pay 1 <FOOD> to plow 1 field.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E91_PlowBuilder",
+    "name": "Plow Builder",
+    "deck": "E",
+    "number": 91,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLOWING",
+    "desc": "You can build the Joinery when taking a __Minor Improvement__ action. If you use the Joinery (or an upgrade thereof) during the harvest, you can pay 1 <FOOD> to plow 1 field.",
+    "players": "1+"
+  },
+  {
+    "id": "E92_FieldDoctor",
+    "name": "Field Doctor",
+    "deck": "E",
+    "number": 92,
+    "type": "occupation",
+    "category": "ACTION_-_FAMILY_GROWTH",
+    "desc": "Once this game, if you live in a house with exactly 2 rooms surrounded by 4 field tiles, you can use any __Wish for Children__ action space even without room.",
+    "players": "1+"
+  },
+  {
+    "id": "E93_Motivator",
+    "name": "Motivator",
+    "deck": "E",
+    "number": 93,
+    "type": "occupation",
+    "category": "ACTION_-_GUEST",
+    "desc": "On your first turn each round, if you have no unused farmyard spaces, you can place a person from your supply.",
+    "players": "1+"
+  },
+  {
+    "id": "E94_Prophet",
+    "name": "Prophet",
+    "deck": "E",
+    "number": 94,
+    "type": "occupation",
+    "category": "ACTION",
+    "desc": "When you play this card, immediately take a __Renovation__ action. Afterward, you can take a __Build Fences__ action. (Both actions require their usual cost.)",
+    "players": "1+"
+  },
+  {
+    "id": "E95_Miller",
+    "name": "Miller",
+    "deck": "E",
+    "number": 95,
+    "type": "occupation",
+    "category": "ACTION_-_MAJOR_IMPROVEMENT",
+    "desc": "You can immediately build a <BAKE>-improvement by paying its cost. Each time another player uses the __Grain Seeds__ action space, you can take a __Bake Bread__ action.",
+    "players": "1+"
+  },
+  {
+    "id": "E96_Elder",
+    "name": "Elder",
+    "deck": "E",
+    "number": 96,
+    "type": "occupation",
+    "category": "ACTION_-_IMPROVEMENT",
+    "desc": "You can play this card at the start of the work phase of round 1 without placing a person. (This card has no effect other than counting as a played occupation.)",
+    "players": "1+"
+  },
+  {
+    "id": "E97_Beneficiary",
+    "name": "Beneficiary",
+    "deck": "E",
+    "number": 97,
+    "type": "occupation",
+    "category": "ACTION_-_OCCUPATION",
+    "desc": "If this is your 3rd occupation, you can immediately play another occupation for an occupation cost of 1 <FOOD> and/or play 1 minor improvement by paying its cost.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E98_Prodigy",
+    "name": "Prodigy",
+    "deck": "E",
+    "number": 98,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "If this is your 1st occupation, you immediately get 1 <SCORE> for each improvement you have. (This will not apply to improvements played after this card.)",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E99_UncaringParents",
+    "name": "Uncaring Parents",
+    "deck": "E",
+    "number": 99,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "At the end of each harvest, if you live in a stone house, you get 1 bonus <SCORE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E100_MuseumCaretaker",
+    "name": "Museum Caretaker",
+    "deck": "E",
+    "number": 100,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "At the start of each work phase, if you have at least 1 <WOOD>, 1 <CLAY>, 1 <REED>, 1 <STONE>, 1 <GRAIN>, and 1 <VEGETABLE> in your supply, you get 1 bonus <SCORE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E101_Blighter",
+    "name": "Blighter",
+    "deck": "E",
+    "number": 101,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_GET",
+    "desc": "When you play this card, you get 1 bonus <SCORE> for each complete stage left to play. You may not play any more occupations.",
+    "players": "1+"
+  },
+  {
+    "id": "E102_Acquirer",
+    "name": "Acquirer",
+    "deck": "E",
+    "number": 102,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "At the start of each round, you can pay <FOOD> equal to the number of people you have to buy 1 good of your choice from the general supply.",
+    "players": "1+"
+  },
+  {
+    "id": "E103_Wolf",
+    "name": "Wolf",
+    "deck": "E",
+    "number": 103,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "Pile (from bottom to top) 1 <CLAY>, 1 <WOOD>, and 1 <GRAIN> on this card. Each time you get a good matching the top item, you can move that item to your supply and get 1 <PIG>.",
+    "players": "1+"
+  },
+  {
+    "id": "E104_SpiceTrader",
+    "name": "Spice Trader",
+    "deck": "E",
+    "number": 104,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "If you play this card in round 4 or before, place 3 <VEGETABLE> on the space for round 11. At the start of that round, you get the <VEGETABLE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E105_Pioneer",
+    "name": "Pioneer",
+    "deck": "E",
+    "number": 105,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "When you play this card and each time before you use the most recent action space card, you get 1 building resource of your choice and 1 <FOOD>.",
+    "players": "1+"
+  },
+  {
+    "id": "E106_EmergencySeller",
+    "name": "Emergency Seller",
+    "deck": "E",
+    "number": 106,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "When you play this card, you can immediately turn as many building resources into food as you have people: <WOOD>/<CLAY> <ARROW> 2 <FOOD> <REED>/<STONE> <ARROW> 3 <FOOD>",
+    "players": "1+"
+  },
+  {
+    "id": "E107_LandSurveyor",
+    "name": "Land Surveyor",
+    "deck": "E",
+    "number": 107,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "In the field phase of each harvest, if you have at least 2/4/6/7 fields, you get 1/2/3/4 <FOOD>.",
+    "players": "1+"
+  },
+  {
+    "id": "E108_BlackberryFarmer",
+    "name": "Blackberry Farmer",
+    "deck": "E",
+    "number": 108,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "Each time you build fences, place 1 <FOOD> on each remaining round space, up to the number of fences just built. At the start of these rounds, you get the <FOOD>.",
+    "players": "1+"
+  },
+  {
+    "id": "E109_BraidMaker",
+    "name": "Braid Maker",
+    "deck": "E",
+    "number": 109,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "Each harvest, you can use this card to exchange 1 <REED> for 2 <FOOD>. You can build the  __Basketmaker\\'s Workshop__ for 1 <REED> and 1 <STONE> even when taking a __Minor Improvement__ action.",
+    "players": "1+"
+  },
+  {
+    "id": "E110_Dentist",
+    "name": "Dentist",
+    "deck": "E",
+    "number": 110,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "At the start of each harvest, you can place 1 <WOOD> from your supply on this card, irretrievably. In each feeding phase, you get 1 <FOOD> for each <WOOD> on this card.",
+    "players": "1+"
+  },
+  {
+    "id": "E111_Recluse",
+    "name": "Recluse",
+    "deck": "E",
+    "number": 111,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "As long as you have no minor improvements in front of you, you get 1 <FOOD> at the start of each round and 1 <WOOD> at the start of each harvest.",
+    "players": "1+"
+  },
+  {
+    "id": "E112_GrainThief",
+    "name": "Grain Thief",
+    "deck": "E",
+    "number": 112,
+    "type": "occupation",
+    "category": "CROPS_-_GRAIN",
+    "desc": "Each time you would harvest a grain field, you can leave the grain on the field and take 1 <GRAIN> from the general supply instead.",
+    "players": "1+"
+  },
+  {
+    "id": "E113_Godmother",
+    "name": "Godmother",
+    "deck": "E",
+    "number": 113,
+    "type": "occupation",
+    "category": "CROPS_-_VEGETABLE",
+    "desc": "Each time you take a __Family Growth__ action, you also get 1 <VEGETABLE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E114_ShedBuilder",
+    "name": "Shed Builder",
+    "deck": "E",
+    "number": 114,
+    "type": "occupation",
+    "category": "CROPS_-_GRAIN_AND_VEGETABLE",
+    "desc": "When you build your 1st and 2nd stable, you get 1 <GRAIN>. When you build your 3rd and 4th stable, you get 1 <VEGETABLE>. (This does not apply to stables you have already built.)",
+    "players": "1+"
+  },
+  {
+    "id": "E115_SeedServant",
+    "name": "Seed Servant",
+    "deck": "E",
+    "number": 115,
+    "type": "occupation",
+    "category": "CROPS_-_SOWING",
+    "desc": "Each time after you use the __Grain Seeds__ or __Vegetable Seeds__ action space, you can take a __Bake bread__ or __Sow__ action, respectively.",
+    "players": "1+"
+  },
+  {
+    "id": "E116_FirCutter",
+    "name": "Fir Cutter",
+    "deck": "E",
+    "number": 116,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_WOOD",
+    "desc": "When you play this card, you immediately get 1 <FOOD>. Each time after you use an animal accumulation space with your 1st/2nd/3rd/4th/5th person, you get 1/1/2/2/3 <WOOD>.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E117_PipeSmoker",
+    "name": "Pipe Smoker",
+    "deck": "E",
+    "number": 117,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_WOOD",
+    "desc": "At the start of each harvest, if you have at least 1 grain field, you get 2 <WOOD>.",
+    "players": "1+"
+  },
+  {
+    "id": "E118_KindlingGatherer",
+    "name": "Kindling Gatherer",
+    "deck": "E",
+    "number": 118,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_WOOD",
+    "desc": "Each time you get <FOOD> from an action space, you get 1 additional <WOOD>.",
+    "players": "1+"
+  },
+  {
+    "id": "E119_LandHeir",
+    "name": "Land Heir",
+    "deck": "E",
+    "number": 119,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_WOOD_(AND_CLAY)",
+    "desc": "If you play this card in round 4 or before, place 4 <WOOD> and 4 <CLAY> on the space for round 9. At the start of this round, you get the resources.",
+    "players": "1+",
+    "implemented": true
+  },
+  {
+    "id": "E120_ScrapCollector",
+    "name": "Scrap Collector",
+    "deck": "E",
+    "number": 120,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_CLAY_(AND_WOOD)",
+    "desc": "Alternate placing 1 <WOOD> and 1 <CLAY> on each of the next 6 round spaces, starting with <WOOD>. At the start of these rounds, you get the respective resource.",
+    "players": "1+"
+  },
+  {
+    "id": "E121_HillCultivator",
+    "name": "Hill Cultivator",
+    "deck": "E",
+    "number": 121,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_CLAY",
+    "desc": "Each time you use the __Grain Seeds__ or __Vegetable Seeds__ action space, you also get 2 or 3 <CLAY>, respectively.",
+    "players": "1+"
+  },
+  {
+    "id": "E122_Cottar",
+    "name": "Cottar",
+    "deck": "E",
+    "number": 122,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_CLAY",
+    "desc": "Each time you play or build an improvement, you get your choice of 1 <WOOD> or 1 <CLAY> immediately after paying its cost.",
+    "players": "1+"
+  },
+  {
+    "id": "E123_ResourceHoarder",
+    "name": "Resource Hoarder",
+    "deck": "E",
+    "number": 123,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_CLAY_AND/OR_STONE",
+    "desc": "Pile resources as depicted on this card. You can use the top item(s) when building a room, playing/building an improvement, or renovating. (From bottom to top: <STONE>, <CLAY>, <STONE>, <REED>, <WOOD>, <CLAY>)",
+    "players": "1+",
+    "implemented": false
+  },
+  {
+    "id": "E124_MayorCandidate",
+    "name": "Mayor Candidate",
+    "deck": "E",
+    "number": 124,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_STONE",
+    "desc": "You immediately get 2 <WOOD> and 2 <STONE>. During scoring, you get 1 negative point for each <WOOD> and each <STONE> in your supply. You can no longer discard <WOOD> or <STONE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E125_DelayedWayfarer",
+    "name": "Delayed Wayfarer",
+    "deck": "E",
+    "number": 125,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_ALL",
+    "desc": "When you play this card, you immediately get 1 building resource of your choice and, once all people have been placed this round, you can place a person from your supply.",
+    "players": "1+",
+    "implemented": false
+  },
+  {
+    "id": "E126_TaxCollector",
+    "name": "Tax Collector",
+    "deck": "E",
+    "number": 126,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_ALL",
+    "desc": "Once you live in a stone house, at the start of each round, you get your choice of 2 <WOOD>, 2 <CLAY>, 1 <REED>, or 1 <STONE>.",
+    "players": "1+"
+  },
+  {
+    "id": "E127_DiligentFarmer",
+    "name": "Diligent Farmer",
+    "deck": "E",
+    "number": 127,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLACE_FOR_PERSON",
+    "desc": "When you play this card, if you would score the maximum 4 points in 3 scoring categories (including fenced stables), you can extend your house by 1 room at no cost.",
+    "players": "3+"
+  },
+  {
+    "id": "E128_Saddler",
+    "name": "Saddler",
+    "deck": "E",
+    "number": 128,
+    "type": "occupation",
+    "category": "FARMYARD",
+    "desc": "Each time after you build a major improvement, you can pay 1 <FOOD> to plow 1 field.",
+    "players": "3+",
+    "implemented": true
+  },
+  {
+    "id": "E129_Imitator",
+    "name": "Imitator",
+    "deck": "E",
+    "number": 129,
+    "type": "occupation",
+    "category": "ACTION",
+    "desc": "If you have a person on the __Day Laborer__ action space, you can use non-accumulating round 1-9 action spaces even if they are occupied.",
+    "players": "3+",
+    "implemented": false
+  },
+  {
+    "id": "E130_Overachiever",
+    "name": "Overachiever",
+    "deck": "E",
+    "number": 130,
+    "type": "occupation",
+    "category": "ACTION_-_IMPROVEMENTS_OR_OCCUPATIONS",
+    "desc": "Each time you use a __Wish for Children__ action space, you can play 1 additional improvement by paying its cost less 1 resource of your choice.",
+    "players": "3+"
+  },
+  {
+    "id": "E131_MarketMaster",
+    "name": "Market Master",
+    "deck": "E",
+    "number": 131,
+    "type": "occupation",
+    "category": "ACTION_-_IMPROVEMENTS_OR_OCCUPATIONS",
+    "desc": "Immediately after each time you place your last person in a round on the __Traveling Players__ accumulation space, you can play 1 occupation for an occupation cost of 1 <FOOD>.",
+    "players": "4+",
+    "implemented": true
+  },
+  {
+    "id": "E132_Shearer",
+    "name": "Shearer",
+    "deck": "E",
+    "number": 132,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "In the field phase of each harvest, if you have at least 1/4/7 sheep, you get 1/2/3 food. (Keep the sheep.) During scoring, you get 1 bonus point for every 3 sheep.",
+    "players": "3+",
+    "implemented": false
+  },
+  {
+    "id": "E132_VeggieLover",
+    "name": "Veggie Lover",
+    "deck": "E",
+    "number": 132,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "[Harvest] <GRAIN_VEG_STACK> <ARROW-1X> 6<FOOD> [Scoring] 1/2/3 <GRAIN_VEG_STACK> <ARROW-1X> 2/4/6 <SCORE>",
+    "players": "3+"
+  },
+  {
+    "id": "E133_ChampionBreeder",
+    "name": "Champion Breeder",
+    "deck": "E",
+    "number": 133,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "Each time you place 2 or 3+ newborn animals on your farm during the breeding phase of the harvest, you get 1 or 2 bonus <SCORE>, respectively.",
+    "players": "3+"
+  },
+  {
+    "id": "E134_Omnifarmer",
+    "name": "Omnifarmer",
+    "deck": "E",
+    "number": 134,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "Each harvest, you can place 1 harvested crop or 1 newborn animal on this card, irretrievably. Once this game, if here are 2/3/4/5 different goods on this, you get 3/5/7/9 bonus <SCORE>.",
+    "players": "3+"
+  },
+  {
+    "id": "E135_Pickler",
+    "name": "Pickler",
+    "deck": "E",
+    "number": 135,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_4_WOOD_CARD_COMPETITION",
+    "desc": "If there are still 1/3/6/9 complete rounds left to play, you immediately get 1/2/3/4 <WOOD>. During scoring, each player with the most total <VEGETABLE> gets 3 bonus <SCORE>.",
+    "players": "3+"
+  },
+  {
+    "id": "E136_AnimalHusbandryWorker",
+    "name": "Animal Husbandry Worker",
+    "deck": "E",
+    "number": 136,
+    "type": "occupation",
+    "category": "BONUS_POINTS_-_4_WOOD_CARD_COMPETITION",
+    "desc": "If there are still 3/6/9 complete rounds left to play, you immediately get 2/3/4 <WOOD> and a __Build Fences__ action. During scoring, each player with the most pastures gets 2 <SCORE>.",
+    "players": "3+"
+  },
+  {
+    "id": "E137_FlaxFarmer",
+    "name": "Flax Farmer",
+    "deck": "E",
+    "number": 137,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "Each time you use the __Reed Bank__ accumulation space, you also get 1 <GRAIN>. Each time you use the __Grain Seeds__ action space, you also get 1 <REED>.",
+    "players": "3+"
+  },
+  {
+    "id": "E138_LivestockExpert",
+    "name": "Livestock Expert",
+    "deck": "E",
+    "number": 138,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "If you play this card in round 11 or before, choose an animal type: you immediately get a number of animals of that type equal to the number you already have on your farm.",
+    "players": "3+"
+  },
+  {
+    "id": "E139_BunnyBreeder",
+    "name": "Bunny Breeder",
+    "deck": "E",
+    "number": 139,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "Select a future round space, subtract the number of the current round from it, and place this many <FOOD> on that space. At the start of that round, you get the <FOOD>.",
+    "players": "3+",
+    "implemented": false
+  },
+  {
+    "id": "E140_Carter",
+    "name": "Carter",
+    "deck": "E",
+    "number": 140,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "Next round, each time you use a building resource accumulation space, you also get 1 <FOOD> for each building resource that you take from the space.",
+    "players": "3+"
+  },
+  {
+    "id": "E141_VegetableVendor",
+    "name": "Vegetable Vendor",
+    "deck": "E",
+    "number": 141,
+    "type": "occupation",
+    "category": "CROPS",
+    "desc": "Each time you use the __Major Improvement__ or __Vegetable Seeds__ action space, you also get 1 <VEGETABLE> or a __Major or Minor Improvement__ action, respectively.",
+    "players": "3+"
+  },
+  {
+    "id": "E142_Smuggler",
+    "name": "Smuggler",
+    "deck": "E",
+    "number": 142,
+    "type": "occupation",
+    "category": "CROPS",
+    "desc": "In the feeding phase of each harvest, you can exchange up to 2 goods as follows: [<WOOD> <ARROW> <GRAIN>] or [<GRAIN> <ARROW> <STONE>]",
+    "players": "3+",
+    "implemented": true
+  },
+  {
+    "id": "E143_Hewer",
+    "name": "Hewer",
+    "deck": "E",
+    "number": 143,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_CLAY_OR_STONE",
+    "desc": "From round 3 on, at the end of each work phase in which all clay accumulation spaces are unoccupied, you get 1 <STONE> and 1 <FOOD>.",
+    "players": "3+"
+  },
+  {
+    "id": "E144_WaresSalesman",
+    "name": "Wares Salesman",
+    "deck": "E",
+    "number": 144,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_REED",
+    "desc": "Each time any player (including you) plays or builds a card that lets them turn building resources into <FOOD>, you get exactly 1 corresponding building resource and 1 <REED>.",
+    "players": "3+"
+  },
+  {
+    "id": "E145_Parvenu",
+    "name": "Parvenu",
+    "deck": "E",
+    "number": 145,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_REED",
+    "desc": "If you play this card in round 7 or before, choose <CLAY> or <REED>: you immediately get a number of that building resource equal to the number you already have in your supply.",
+    "players": "3+",
+    "implemented": true
+  },
+  {
+    "id": "E146_Reseller",
+    "name": "Reseller",
+    "deck": "E",
+    "number": 146,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES_-_ALL",
+    "desc": "Once this game, immediately after playing or building an improvement, you can choose to get its printed cost from the general supply.",
+    "players": "3+"
+  },
+  {
+    "id": "E147_AnimalDriver",
+    "name": "Animal Driver",
+    "deck": "E",
+    "number": 147,
+    "type": "occupation",
+    "category": "ANIMALS_-_ALL",
+    "desc": "At the start of each harvest, if you have 1/2/3+ fenced stables, you get 1 <SHEEP>/<PIG>/<CATTLE>.",
+    "players": "3+",
+    "implemented": true
+  },
+  {
+    "id": "E148_Lazybones",
+    "name": "Lazybones",
+    "deck": "E",
+    "number": 148,
+    "type": "occupation",
+    "category": "FARMYARD_-_PLACE_FOR_ANIMALS",
+    "desc": "Place (up to) 1 <STABLE> each on __Grain Seeds__, __Farmland__, __Day Laborer__, and __Farm Expansion__. Build the <STABLE> at no cost when another player uses that action space.",
+    "players": "4+"
+  },
+  {
+    "id": "E149_MidnightFencer",
+    "name": "Midnight Fencer",
+    "deck": "E",
+    "number": 149,
+    "type": "occupation",
+    "category": "FARMYARD",
+    "desc": "At the start of the last harvest, you can take up to 2 of each other player\\'s unbuilt fences and build them on your farm at no cost. (Your farm can then have over 15 fences.)",
+    "players": "4+",
+    "implemented": false
+  },
+  {
+    "id": "E150_RockBeater",
+    "name": "Rock Beater",
+    "deck": "E",
+    "number": 150,
+    "type": "occupation",
+    "category": "ACTION",
+    "desc": "You can use an action space providing both stone and a different building resource even if it is occupied by another player. Stone rooms cost you 2 <STONE> less each.",
+    "players": "4+"
+  },
+  {
+    "id": "E151_DeliveryNurse",
+    "name": "Delivery Nurse",
+    "deck": "E",
+    "number": 151,
+    "type": "occupation",
+    "category": "ACTION",
+    "desc": "Once this game, if you have all types of animals, you can use any __Wish for Children__ action space even without room.",
+    "players": "4+"
+  },
+  {
+    "id": "E152_BargainHunter",
+    "name": "Bargain Hunter",
+    "deck": "E",
+    "number": 152,
+    "type": "occupation",
+    "category": "ACTION_-_IMPROVEMENTS_OR_OCCUPATIONS",
+    "desc": "At the start of each round, you can place 1 <FOOD> from your supply on the __Traveling Players__ accumulation space to play a minor improvement by paying its cost.",
+    "players": "4+"
+  },
+  {
+    "id": "E153_StoneSculptor",
+    "name": "Stone Sculptor",
+    "deck": "E",
+    "number": 153,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "Each harvest, you can use this card to exchange exactly 1 <STONE> for 1 bonus <SCORE> and 1 <FOOD>.",
+    "players": "4+",
+    "implemented": true
+  },
+  {
+    "id": "E154_Margrave",
+    "name": "Margrave",
+    "deck": "E",
+    "number": 154,
+    "type": "occupation",
+    "category": "BONUS_POINTS",
+    "desc": "Once you live in a stone house, you get 2 <FOOD> each time any player renovates and, during scoring, 1 bonus <SCORE> for each wood house and clay house.",
+    "players": "4+"
+  },
+  {
+    "id": "E155_Visionary",
+    "name": "Visionary",
+    "deck": "E",
+    "number": 155,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "If you play this card in round 4 or before, you get 1 <STONE>, 1 <VEGETABLE>, and 2 <PIG>. You cannot grow your family until round 11, unless all other players already have.",
+    "players": "4+"
+  },
+  {
+    "id": "E156_ClaypitOwner",
+    "name": "Claypit Owner",
+    "deck": "E",
+    "number": 156,
+    "type": "occupation",
+    "category": "GOODS_-_GET",
+    "desc": "Each time another player plays or builds an improvement with a printed <CLAY> cost, you get 1 <FOOD> and 1 <CLAY>.",
+    "players": "4+"
+  },
+  {
+    "id": "E157_Usufructuary",
+    "name": "Usufructuary",
+    "deck": "E",
+    "number": 157,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "When you play this card as your first occupation, you immediately get 1 <FOOD> for every other occupation in play (by any player), up to a maximum of 7 <FOOD>.",
+    "players": "4+"
+  },
+  {
+    "id": "E158_StoneCustodian",
+    "name": "Stone Custodian",
+    "deck": "E",
+    "number": 158,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "At the end of each work phase, you get 1 <FOOD> for each stone accumulation space with stone on it.",
+    "players": "4+",
+    "implemented": true
+  },
+  {
+    "id": "E159_OldMiser",
+    "name": "Old Miser",
+    "deck": "E",
+    "number": 159,
+    "type": "occupation",
+    "category": "FOOD",
+    "desc": "In the feeding phase of each harvest, each of your people requires 1 less <FOOD>. During scoring, your people are worth 2 points each instead of 3.",
+    "players": "4+"
+  },
+  {
+    "id": "E160_KelpGatherer",
+    "name": "Kelp Gatherer",
+    "deck": "E",
+    "number": 160,
+    "type": "occupation",
+    "category": "CROPS",
+    "desc": "Each time another player uses the __Fishing__ accumulation space, they get 1 additional <FOOD> and you get 1 <VEGETABLE>.",
+    "players": "4+"
+  },
+  {
+    "id": "E161_ElderBaker",
+    "name": "Elder Baker",
+    "deck": "E",
+    "number": 161,
+    "type": "occupation",
+    "category": "CROPS",
+    "desc": "This card is an action space for you only. When you use it, you get 3 <GRAIN>. You can build the __Stone Oven__ major improvement even when taking a __Minor Improvement__ action.",
+    "players": "4+"
+  },
+  {
+    "id": "E162_Entrepreneur",
+    "name": "Entrepreneur",
+    "deck": "E",
+    "number": 162,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES",
+    "desc": "At the start of each round, you can move 1 <FOOD> to this card or discard 1 <FOOD> from it. If you do either, you get 1 building resource of a type you currently do not have.",
+    "players": "4+"
+  },
+  {
+    "id": "E163_Patroness",
+    "name": "Patroness",
+    "deck": "E",
+    "number": 163,
+    "type": "occupation",
+    "category": "BUILDING_RESOURCES",
+    "desc": "Each time after you play an occupation after this one, you get 1 building resource of your choice.",
+    "players": "4+"
+  },
+  {
+    "id": "E164_MountainPlowman",
+    "name": "Mountain Plowman",
+    "deck": "E",
+    "number": 164,
+    "type": "occupation",
+    "category": "ANIMALS_-_SHEEP",
+    "desc": "Each time you plow at least 1 field, you get 1 <SHEEP> for each field that you just plowed.",
+    "players": "4+"
+  },
+  {
+    "id": "E165_MasterHuntsman",
+    "name": "Master Huntsman",
+    "deck": "E",
+    "number": 165,
+    "type": "occupation",
+    "category": "ANIMALS_-_WILD_BOAR",
+    "desc": "When you play this card and each time you build a major improvement, you get 1 <PIG>.",
+    "players": "4+"
+  },
+  {
+    "id": "E166_Roastmaster",
+    "name": "Roastmaster",
+    "deck": "E",
+    "number": 166,
+    "type": "occupation",
+    "category": "ANIMALS_-_CATTLE",
+    "desc": "Each time you use the __Traveling Players__ or __Fishing__ accumulation spaces, you can move exactly 1 <FOOD> from that space to the other to get 1 <CATTLE>.",
+    "players": "4+"
+  },
+  {
+    "id": "E167_DairyCrier",
+    "name": "Dairy Crier",
+    "deck": "E",
+    "number": 167,
+    "type": "occupation",
+    "category": "ANIMALS_-_ALL",
+    "desc": "When you play this card, each player (including you) can choose to get 2 <SHEEP> or 2 <FOOD>; you also get 1 <CATTLE>.",
+    "players": "4+"
+  },
+  {
+    "id": "E168_AnimalTamersApprentice",
+    "name": "Animal Tamer's Apprentice",
+    "deck": "E",
+    "number": 168,
+    "type": "occupation",
+    "category": "ANIMALS_-_ALL",
+    "desc": "At the start of each round, you get 1 <SHEEP>/<PIG>/<CATTLE> for each unoccupied wood/clay/stone room in your house.",
+    "players": "4+"
+  }
+]

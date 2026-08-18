@@ -1,0 +1,3521 @@
+/**
+ * Agricola Engine + AI Bundle (auto-generated)
+ * Includes: constants, GameState, GameEngine, heuristic AI, MCTS
+ *
+ * Usage:
+ *   const engine = new Agricola.GameEngine(4);
+ *   const ai = new Agricola.MCTSAI({ iterations: 1000 });
+ */
+(function(global) {
+  'use strict';
+
+
+// ===== js/constants.js =====
+// ================= 游戏常量 & 数据 =================
+
+const LIMIT_FENCES = 15;
+const LIMIT_STABLES = 4;
+const MAX_ROUNDS = 14;
+const HARVEST_ROUNDS = [4, 7, 9, 11, 13, 14];
+
+const SCORING_TIERS = {
+    fields:  [-1, -1, 1, 2, 3, 4],
+    pastures:[-1, 1, 2, 3, 4],
+    grain:   [-1, 1, 1, 1, 2, 2, 3, 3, 4],
+    veg:     [-1, 1, 2, 3, 4],
+    sheep:   [-1, 1, 1, 1, 2, 2, 3, 3, 4],
+    boar:    [-1, 1, 1, 2, 2, 3, 3, 4],
+    cow:     [-1, 1, 2, 3, 4]
+};
+
+const DB_MAJORS = [
+    { id: 'm1', name: '🔥火炉(2砖)', cost: {clay:2}, score:1, type:'cook', desc:'烤面包(2食), 变食:羊2/猪2/牛3/菜2', bakeRate:2, cook:{sheep:2, boar:2, cow:3, veg:2} },
+    { id: 'm2', name: '🔥火炉(3砖)', cost: {clay:3}, score:1, type:'cook', desc:'同上', bakeRate:2, cook:{sheep:2, boar:2, cow:3, veg:2} },
+    { id: 'm3', name: '🍲壁炉(4砖)', cost: {clay:4}, score:1, type:'cook', desc:'烤面包(3食), 变食:羊2/猪3/牛4/菜3', bakeRate:3, cook:{sheep:2, boar:3, cow:4, veg:3} },
+    { id: 'm4', name: '🍲壁炉(5砖)', cost: {clay:5}, score:1, type:'cook', desc:'同上', bakeRate:3, cook:{sheep:2, boar:3, cow:4, veg:3} },
+    { id: 'm5', name: '💧水井', cost: {stone:3,wood:1}, score:4, desc:'未来每轮+1食物', special:'well' },
+    { id: 'm6', name: '🧺芦苇工坊', cost: {reed:2,stone:2}, score:2, desc:'芦苇换食/分 (结束时每2芦苇+1分)', special:'bonus', bonusType: 'reed', convert:{reed:1, food:2} },
+    { id: 'm7', name: '🪑木头工坊', cost: {wood:2,stone:2}, score:2, desc:'木头换食/分 (结束时每2木+1分)', special:'bonus', bonusType: 'wood', convert:{wood:1, food:2} },
+    { id: 'm8', name: '🧱砖头工坊', cost: {clay:2,stone:2}, score:2, desc:'砖头换食/分 (结束时每2砖+1分)', special:'bonus', bonusType: 'clay', convert:{clay:1, food:2} },
+    { id: 'm9', name: '🪨石造烤炉', cost: {stone:3,clay:1}, score:3, desc:'高效烤面包(2麦->8食)', type:'bake', specialBake:{in:2, out:8} },
+    { id: 'm10', name: '🏺砖造烤炉', cost: {clay:3,stone:1}, score:2, desc:'高效烤面包(1麦->5食)', type:'bake', specialBake:{in:1, out:5} }
+];
+
+const BASE_ACTIONS = [
+    { id:'act_forest_3', name:'🌲 森林 (3木)', acc:3, cur:3, type:'res', res:'wood' },
+    { id:'act_forest_2', name:'🌳 树林 (2木)', acc:2, cur:2, type:'res', res:'wood' },
+    { id:'act_forest_1', name:'🌱 林地 (1木)', acc:1, cur:1, type:'res', res:'wood' },
+    { id:'act_clay_pit', name:'🧱 粘土坑 (1砖)', acc:1, cur:1, type:'res', res:'clay' },
+    { id:'act_hollow', name:'🧱 泥坑 (2砖)', acc:2, cur:2, type:'res', res:'clay' },
+    { id:'act_reed1', name:'🎋 芦苇岸 (1苇)', acc:1, cur:1, type:'res', res:'reed' },
+    { id:'act_fish', name:'🐟 钓鱼 (1食)', acc:1, cur:1, type:'res', res:'food' },
+    { id:'act_travel', name:'🎭 卖艺 (1食)', acc:1, cur:1, type:'res', res:'food' },
+    { id:'act_labor', name:'👷 临时工 (2食)', type:'res', res:'food', amount:2 },
+    { id:'act_grain', name:'🌾 小麦种子', type:'res', res:'grain', amount:1 },
+    { id:'act_meeting', name:'👥 聚会场所', type:'special', mode:'meeting', desc:'成为下轮起始玩家，可打1张次要改良' },
+    { id:'act_lessons', name:'🎓 上课', type:'special', mode:'lesson', lessonCost:[0,1], desc:'花1食打1张职业（第一张免费）' },
+    { id:'act_lessons2', name:'🎓 夜校', type:'special', mode:'lesson2', lessonCost:[1,1,2], players:[4], desc:'花2食打1张职业（前两张仅1食）' },
+    { id:'act_market', name:'🛒 资源市场', type:'res_combo', desc:'1苇+1石+1食' },
+    { id:'act_plow', name:'🚜 犁地', type:'special', mode:'plow' },
+    { id:'act_build', name:'🏠 建房/马厩', type:'special', mode:'build_menu', desc:'自由建造房间/马厩' }
+];
+
+const ROUND_CARDS_POOL = [
+    { id:'r_sheep', name:'🐑 牧羊 (1羊)', acc:1, cur:1, type:'res', res:'sheep', stage:1 },
+    { id:'r_sow', name:'🌱 播种', type:'special', mode:'sow', stage:1 },
+    { id:'r_fences', name:'🚧 栅栏', type:'special', mode:'fence', stage:1 },
+    { id:'r_major', name:'🏗️ 发展卡', type:'special', mode:'major', stage:1 },
+    { id:'r_stone', name:'🪨 西部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:2 },
+    { id:'r_reno', name:'🔨 翻修+发展卡', type:'special', mode:'reno_major', stage:2 },
+    { id:'r_grow', name:'👶 生儿育女', type:'special', mode:'grow', stage:2, desc:'需空房 > 人口' },
+    { id:'r_boar', name:'🐗 野猪 (1猪)', acc:1, cur:1, type:'res', res:'boar', stage:3 },
+    { id:'r_veg', name:'🥕 蔬菜', type:'res', res:'veg', amount:1, stage:3 },
+    { id:'r_cow', name:'🐮 牛 (1牛)', acc:1, cur:1, type:'res', res:'cow', stage:4 },
+    { id:'r_stone2', name:'🪨 东部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:4 },
+    { id:'r_plow_sow', name:'🚜 犁地+播种', type:'special', mode:'plow_sow', stage:5 },
+    { id:'r_grow2', name:'👶 急于求成', type:'special', mode:'grow_force', stage:5 },
+    { id:'r_reno_fence', name:'🔨 翻修+栅栏', type:'special', mode:'reno_fence', stage:6 }
+];
+
+const RESOURCE_ICONS = {
+    wood:'🪵', clay:'🧱', reed:'🎋', stone:'🪨',
+    food:'🥣', grain:'🌾', veg:'🥕',
+    sheep:'🐑', boar:'🐗', cow:'🐮'
+};
+
+// Export for Node.js (testing/AI training) and browser
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        LIMIT_FENCES, LIMIT_STABLES, MAX_ROUNDS, HARVEST_ROUNDS,
+        SCORING_TIERS, DB_MAJORS, BASE_ACTIONS, ROUND_CARDS_POOL, RESOURCE_ICONS
+    };
+}
+
+
+// ===== js/data/cards.js =====
+/**
+ * Selected 56 cards (28 occupations + 28 minor improvements) for AI simulation.
+ *
+ * Each player is dealt 7 occupations + 7 minors at game start (4 players -> 28 of each used).
+ * Cards are drawn from A/B/C/D/E BGA decks; most carry `banned: true` (officially banned
+ * in BGA because they swing games or require extra UI flows) — kept here intentionally
+ * so the AI has to reason about high-variance opens.
+ *
+ * Effect schema (each entry in `effects`):
+ *   { trigger: '<hookName>', ...params }
+ *
+ * Common triggers:
+ *   onBuy              { gain?: Res, pay?: Res, custom?: string }
+ *   onCollect          { resource, gain?: Res, pay?: Res, threshold?: number, leaveInstead?: bool }
+ *   onActionSpace      { space: 'dayLaborer'|'fishing'|'lessons'|'majorImprovement'|..., gain?, pay?, extraAction? }
+ *   startOfTurn        { condition?, gain?, choice?: Res[] }
+ *   startOfWork        { effect: 'placeFarmerOnMissingRes' }
+ *   startOfHarvest     { effect: 'freeOccupation' }
+ *   endOfWorkPhase     { condition: 'stone>clay', gain }
+ *   afterBuildRoom     { gain? }
+ *   afterRenovation    { gain? }
+ *   afterBuildMajor    { majorIds?: string[], effect: 'freeOccupation', count?: n }
+ *   afterFence         { minPastureSize?, gain }
+ *   beforeBake         { gain?, pay? }
+ *   onBake             { replaceAction: 'freeOccupation' }
+ *   onHarvestFeed      { pay, gain, score }
+ *   onReap             { resource, scorePerUnit }
+ *   endScoring         { kind: 'improvements'|'mostRooms'|'fieldsFood'|'negScoreToPos'|'adjacentFree'|'fullFarmVeg' }
+ *   roomCost           { res?: <wood|clay|stone>, amount, reed?, discount?: Res }
+ *   fenceCost          { canUseClay?: bool, freeFences?: [13..15] }
+ *   stableCost         { nthDiscount: {3:1, 4:1} }
+ *   improvementCost    { discount: Res, majorIds?: string[] }
+ *   renovationCost     { discount: Res, replaceReedWithWood?: bool }
+ *   provideRoom        { count: 1, until?: 'round9' }
+ *   placeExtraFarmer   { when: 'onBuy'|'workPhase', removedAtReturnHome?: bool }
+ *   growAnytime        { fromRound?: n, needRoom: true, scorePenalty?: n }
+ *   minorAsGrow        { fromRound: n }
+ *   exchange           { give, get }
+ *   ignoreOccupancy    { condition: 'twoRoomWoodHouse' }
+ *   accumulator        { stack: Res[], onMatch: { takeStack: n, gain: {pig:n} } }
+ *   foodBank           { initial: n, perGrainGain: 1, onEmpty: 'growWithoutRoom' }
+ *   custom             { id: 'craftBrewery'|'wolf'|'chapel'|'workCertificate'|'nightworker'|'tradeTeacher'|'petLover'|'summerHouse' }
+ *
+ * The GameEngine card hooks (when added) will dispatch on `trigger`; cards with only
+ * `custom` require bespoke code paths.
+ */
+
+// ======================== Occupations (28) ========================
+
+const OCCUPATIONS = [
+  // -------- 建材 / 建造 --------
+  {
+    id: 'A116', deck: 'A', type: 'occupation',
+    name: '伐木工', nameEn: 'Wood Cutter',
+    players: '1+', cost: null,
+    effects: [{ trigger: 'onCollect', resource: 'wood', gain: { wood: 1 } }],
+    desc: '每次使用木材累积格，额外 +1 木。'
+  },
+  {
+    id: 'A143', deck: 'A', type: 'occupation',
+    name: '石匠', nameEn: 'Stonecutter',
+    players: '3+', cost: null,
+    effects: [
+      { trigger: 'improvementCost', discount: { stone: 1 } },
+      { trigger: 'roomCost', discount: { stone: 1 } },
+      { trigger: 'renovationCost', discount: { stone: 1 } },
+    ],
+    desc: '所有改良、建房、翻修费用 −1 石。'
+  },
+  {
+    id: 'B126', deck: 'B', type: 'occupation',
+    name: '木匠', nameEn: 'Carpenter',
+    players: '1+', cost: null,
+    effects: [{ trigger: 'roomCost', amount: 3, reed: 2 }],
+    desc: '每个新房间只需 3 对应建材 + 2 苇（木房=3木，砖房=3砖，石房=3石）。'
+  },
+  {
+    id: 'B145', deck: 'B', type: 'occupation',
+    name: '拾柴工', nameEn: 'Brushwood Collector',
+    players: '3+', cost: null, banned: true,
+    effects: [
+      { trigger: 'roomCost', replace: { reed: 'wood' } },
+      { trigger: 'renovationCost', replace: { reed: 'wood' } },
+    ],
+    desc: '建房或翻修时，可用 1 木替换所需的 1~2 苇。'
+  },
+  {
+    id: 'C88', deck: 'C', type: 'occupation',
+    name: '木匠学徒', nameEn: "Carpenter's Apprentice",
+    players: '1+', cost: null,
+    effects: [
+      { trigger: 'roomCost', discount: { wood: 2 }, onlyRoomType: 'wood' },
+      { trigger: 'stableCost', nthDiscount: { 3: 1, 4: 1 } },
+      { trigger: 'fenceCost', freeSegments: [13, 14, 15] },
+    ],
+    desc: '木房 −2 木；第 3、4 个马厩各 −1 木；第 13~15 段栅栏免费。'
+  },
+  {
+    id: 'C102', deck: 'C', type: 'occupation',
+    name: '森林守卫', nameEn: 'Tree Guard',
+    players: '1+', cost: null, banned: true,
+    effects: [{
+      trigger: 'onCollect', resource: 'wood',
+      optional: true,
+      pay: { wood: 4 }, payToSpace: true,
+      gain: { stone: 2, clay: 1, reed: 1, grain: 1 },
+    }],
+    desc: '每次取木后，可把 4 木放回该累积格，立刻换 2石+1砖+1苇+1麦。'
+  },
+  {
+    id: 'C126', deck: 'C', type: 'occupation',
+    name: '挖掘工', nameEn: 'Excavator',
+    players: '1+', cost: null,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      gain: { wood: 1, clay: 1 },
+      extra: { optional: true, pay: { food: 1 }, gain: { stone: 1 } },
+    }],
+    desc: '每次用临时工格 +1木+1砖，并可花 1食买 1石。'
+  },
+  {
+    id: 'B117', deck: 'B', type: 'occupation',
+    name: '线人', nameEn: 'Informant',
+    players: '1+', cost: null, banned: true,
+    effects: [
+      { trigger: 'onBuy', gain: { wood: 1 } },
+      { trigger: 'endOfWorkPhase', condition: 'stone>clay', gain: { wood: 1 } },
+    ],
+    desc: '打出时 +1木；每个工作阶段结束时若手中石多于砖，+1木。'
+  },
+
+  // -------- 扩房 / 家庭 --------
+  {
+    id: 'B87', deck: 'B', type: 'occupation',
+    name: '佃农', nameEn: 'Cottager',
+    players: '1+', cost: null,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      optional: true,
+      extraAction: 'construct1roomOrRenovate',
+    }],
+    desc: '每次用临时工格，可额外建 1 房或翻修（正常付费）。'
+  },
+  {
+    id: 'B91', deck: 'B', type: 'occupation',
+    name: '耕种帮手', nameEn: 'Assistant Tiller',
+    players: '1+', cost: null,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      optional: true, extraAction: 'plow1',
+    }],
+    desc: '每次用临时工格，可额外犁 1 田。'
+  },
+  {
+    id: 'B114', deck: 'B', type: 'occupation',
+    name: '无子嗣者', nameEn: 'Childless',
+    players: '1+', cost: null,
+    effects: [{
+      trigger: 'startOfTurn',
+      condition: { roomsAtLeast: 3, workersExactly: 2 },
+      gain: { food: 1 },
+      choice: [{ grain: 1 }, { veg: 1 }],
+    }],
+    desc: '每轮开始时若至少 3 房但只有 2 人，+1食 +（1麦 或 1菜）。'
+  },
+  {
+    id: 'D92', deck: 'D', type: 'occupation',
+    name: '儿童监护人', nameEn: 'Child Ombudsman',
+    players: '1+', cost: null, banned: true,
+    effects: [{
+      trigger: 'afterAnyAction', fromRound: 5, needRoom: true,
+      effect: 'grow', scorePenalty: 2,
+    }],
+    desc: '第 5 轮起，任何工人动作结束时若有空房，可触发生儿育女，但 −2 分。'
+  },
+  {
+    id: 'B151', deck: 'B', type: 'occupation',
+    name: '农孩', nameEn: 'Little Peasant',
+    players: '4+', cost: null, banned: true,
+    effects: [
+      { trigger: 'onBuy', gain: { stone: 1 } },
+      { trigger: 'ignoreOccupancy', condition: 'twoRoomWoodHouse', except: ['meetingPlace'] },
+    ],
+    desc: '打出 +1石；只要仍住 2 房木屋，除聚会所外所有行动格对你都算无人占用。'
+  },
+  {
+    id: 'D152', deck: 'D', type: 'occupation',
+    name: '资助人', nameEn: 'Patron',
+    players: '4+', cost: null,
+    effects: [{ trigger: 'beforePlayOccupation', gain: { food: 2 } }],
+    desc: '在这张职业之后每打一张职业，付费之前先 +2食。'
+  },
+
+  // -------- 食物 / 资源 --------
+  {
+    id: 'A114', deck: 'A', type: 'occupation',
+    name: '季节工', nameEn: 'Seasonal Worker',
+    players: '1+', cost: null,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      gain: { grain: 1 },
+      fromRound: 6, choice: [{ grain: 1 }, { veg: 1 }],
+    }],
+    desc: '用临时工格 +1麦；第 6 轮起可改为 +1菜。'
+  },
+  {
+    id: 'A138', deck: 'A', type: 'occupation',
+    name: '鱼叉猎手', nameEn: 'Harpooner',
+    players: '3+', cost: null,
+    effects: [{
+      trigger: 'onActionSpace', space: 'fishing',
+      optional: true, pay: { wood: 1 },
+      gain: { food: 'perWorker', reed: 1 },
+    }],
+    desc: '使用钓鱼格时可花 1木：每人得 1食 + 1苇。'
+  },
+  {
+    id: 'D137', deck: 'D', type: 'occupation',
+    name: '贸易导师', nameEn: 'Trade Teacher',
+    players: '3+', cost: null, banned: true,
+    effects: [{
+      trigger: 'onActionSpace', space: 'lessons',
+      custom: 'tradeTeacherShop',
+      shop: [
+        { res: 'grain', cost: 1 }, { res: 'stone', cost: 1 },
+        { res: 'sheep', cost: 1 }, { res: 'boar', cost: 1 },
+        { res: 'cow', cost: 2 }, { res: 'veg', cost: 2 },
+      ],
+      maxDifferent: 2,
+    }],
+    desc: '用上课格后可花钱买最多 2 种不同货：麦/石/羊/猪各 1食，牛/菜各 2食。'
+  },
+  {
+    id: 'D138', deck: 'D', type: 'occupation',
+    name: '宠物爱好者', nameEn: 'Pet Lover',
+    players: '3+', cost: null,
+    effects: [{
+      trigger: 'onCollect', resource: 'animal',
+      condition: 'spaceExactlyOne',
+      optional: true,
+      leaveOnSpace: true,
+      gain: { sameAnimal: 1, food: 3, grain: 1 },
+    }],
+    desc: '用仅 1 只动物的累积格时，可把那只留在格上，改为从供应堆拿同种 1 只 +3食+1麦。'
+  },
+  {
+    id: 'E103', deck: 'E', type: 'occupation',
+    name: '狼', nameEn: 'Wolf',
+    players: '1+', cost: null,
+    effects: [
+      { trigger: 'onBuy', custom: 'wolfInit' },
+      { trigger: 'onObtain', custom: 'wolfMatch' },
+    ],
+    desc: '卡上从底到顶叠 1砖、1木、1麦；每次获得与顶部相同的货，可拿走该货并得 1 猪。'
+  },
+  {
+    id: 'C125', deck: 'C', type: 'occupation',
+    name: '夜班工人', nameEn: 'Nightworker',
+    players: '1+', cost: null, banned: true,
+    effects: [{
+      trigger: 'startOfWork',
+      custom: 'nightworkerPlaceFarmer',
+    }],
+    desc: '每工作阶段开始前，可在你手中为 0 的建材（木/砖/苇/石）的累积格上先放 1 个工人。'
+  },
+
+  // -------- 职业引擎 / 动作 --------
+  {
+    id: 'A97', deck: 'A', type: 'occupation',
+    name: '新手学徒', nameEn: 'Freshman',
+    players: '1+', cost: null, banned: true,
+    effects: [{
+      trigger: 'onBake',
+      optional: true, perTurn: 1,
+      replaceAction: 'freeOccupation',
+    }],
+    desc: '每次获得烤面包动作时，可改为免费打 1 张职业（每回合最多 1 次）。'
+  },
+  {
+    id: 'A131', deck: 'A', type: 'occupation',
+    name: '技校导师', nameEn: 'Craft Teacher',
+    players: '3+', cost: null, banned: true,
+    effects: [{
+      trigger: 'afterBuildMajor',
+      majorIds: ['joinery', 'pottery', 'basketmakersWorkshop'],
+      effect: 'freeOccupation', count: 2,
+    }],
+    desc: '每次建木工房/陶工房/编笼工房后，可免费打最多 2 张职业。'
+  },
+  {
+    id: 'D97', deck: 'D', type: 'occupation',
+    name: '乞讨学徒', nameEn: 'Begging Student',
+    players: '1+', cost: null, banned: true,
+    effects: [
+      { trigger: 'onBuy', gain: { begging: 1 } },
+      { trigger: 'startOfHarvest', optional: true, effect: 'freeOccupation' },
+    ],
+    desc: '打出时拿 1 乞讨标记；每次收获开始可免费打 1 张职业。'
+  },
+  {
+    id: 'B161', deck: 'B', type: 'occupation',
+    name: '体弱多病者', nameEn: 'Weakling',
+    players: '4+', cost: null, banned: true,
+    effects: [{
+      trigger: 'onTurnIfAccumulationUnused',
+      threshold: 5, gain: { veg: 1 },
+    }],
+    desc: '你回合时若场上有累积 ≥5 货的累积格而你没用其中任何一格，得 1菜。'
+  },
+
+  // -------- 终局计分 --------
+  {
+    id: 'A133', deck: 'A', type: 'occupation',
+    name: '吹牛者', nameEn: 'Braggart',
+    players: '3+', cost: null, banned: true,
+    effects: [{
+      trigger: 'endScoring', kind: 'improvements',
+      map: { 5: 2, 6: 3, 7: 4, 8: 5, 9: 7, 10: 9 },
+    }],
+    desc: '终局按改良总数得分：5/6/7/8/9/10 → 2/3/4/5/7/9 分。'
+  },
+  {
+    id: 'B132', deck: 'B', type: 'occupation',
+    name: '庄园主', nameEn: 'Estate Master',
+    players: '3+', cost: null, banned: true,
+    effects: [
+      { trigger: 'afterFarmFull', flag: true },
+      { trigger: 'onReap', resource: 'veg', scorePerUnit: 1, requiresFlag: true },
+    ],
+    desc: '农场所有格子用完后，每次收割 1 蔬菜 +1 分。'
+  },
+  {
+    id: 'B136', deck: 'B', type: 'occupation',
+    name: '房屋管家', nameEn: 'House Steward',
+    players: '3+', cost: null,
+    effects: [
+      { trigger: 'onBuy', gainWoodByRoundsLeft: [0, 1, 1, 2, 2, 2, 3, 3, 3, 4] },
+      { trigger: 'endScoring', kind: 'mostRooms', score: 3 },
+    ],
+    desc: '打出时按剩余完整轮数得 1/2/3/4 木（剩 1/3/6/9 轮）；终局房间最多者（含并列）+3 分。'
+  },
+  {
+    id: 'C99', deck: 'C', type: 'occupation',
+    name: '园林设计师', nameEn: 'Garden Designer',
+    players: '1+', cost: null, banned: true,
+    effects: [{
+      trigger: 'beforeEndOfGame',
+      options: [
+        { pay: { food: 1 }, score: 1 },
+        { pay: { food: 4 }, score: 2 },
+        { pay: { food: 7 }, score: 3 },
+      ],
+      perEmptyField: true,
+    }],
+    desc: '计分开时，可在每块空田放 1/4/7 食 → +1/2/3 分。'
+  },
+];
+
+// ======================== Minor Improvements (28) ========================
+
+const MINORS = [
+  // -------- 建材 / 建造 --------
+  {
+    id: 'A14', deck: 'A', type: 'minor',
+    name: '木匠锤', nameEn: "Carpenter's Hammer",
+    cost: { wood: 1 },
+    effects: [{
+      trigger: 'roomCost', discount: { reed: 2 },
+      discountByRoomType: { wood: 2, clay: 3, stone: 4 },
+      minRooms: 2,
+    }],
+    desc: '一次建至少 2 房时，共减免 2 苇，以及木/砖/石房分别 2木/3砖/4石。'
+  },
+  {
+    id: 'A15', deck: 'A', type: 'minor',
+    name: '木匠斧', nameEn: "Carpenter's Axe",
+    cost: { wood: 1 },
+    effects: [{
+      trigger: 'onCollect', resource: 'wood',
+      condition: { woodAtLeast: 7 },
+      optional: true,
+      extraAction: 'build1Stable', costOverride: { wood: 1 },
+    }],
+    desc: '从木材累积格取木后若手中 ≥7 木，可花 1 木建 1 马厩。'
+  },
+  {
+    id: 'A16', deck: 'A', type: 'minor',
+    name: '夯实粘土', nameEn: 'Rammed Clay',
+    cost: null,
+    effects: [
+      { trigger: 'onBuy', gain: { clay: 1 } },
+      { trigger: 'fenceCost', canUseClay: true },
+    ],
+    desc: '打出时 +1砖；可用砖代替木修栅栏。'
+  },
+  {
+    id: 'B13', deck: 'B', type: 'minor',
+    name: '木匠小屋', nameEn: "Carpenter's Parlor",
+    cost: { wood: 1, stone: 1 },
+    effects: [{ trigger: 'roomCost', onlyRoomType: 'wood', amount: 2, reed: 2 }],
+    desc: '木房每间只需 2 木 + 2 苇。'
+  },
+  {
+    id: 'B15', deck: 'B', type: 'minor',
+    name: '木工台', nameEn: "Carpenter's Bench",
+    cost: { wood: 1 }, banned: true,
+    effects: [{
+      trigger: 'onCollect', resource: 'wood',
+      optional: true,
+      extraAction: 'fenceWithTakenWood', freeFences: 1,
+    }],
+    desc: '取木后可立刻用这批木围 1 牧场，其中 1 段栅栏免费。'
+  },
+  {
+    id: 'C82', deck: 'C', type: 'minor',
+    name: '五金店', nameEn: 'Hardware Store',
+    cost: { wood: 1, clay: 1 }, vp: 1,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      optional: true,
+      pay: { food: 2 }, gain: { wood: 1, clay: 1, reed: 1, stone: 1 },
+    }],
+    desc: '用临时工格后，可花 2食买 1木+1砖+1苇+1石。'
+  },
+  {
+    id: 'D4', deck: 'D', type: 'minor',
+    name: '横切木', nameEn: 'Cross-Cut Wood',
+    cost: { food: 1 }, prereq: '3 occupations',
+    effects: [{ trigger: 'onBuy', gain: { wood: 'equalToStoneInSupply' } }],
+    desc: '立刻获得等同于手中石数量的木。'
+  },
+  {
+    id: 'D74', deck: 'D', type: 'minor',
+    name: '皇家木材', nameEn: 'Royal Wood',
+    cost: { food: 1 }, banned: true,
+    effects: [{
+      trigger: 'endOfTurnAfterPay',
+      appliesTo: ['farmExpansion', 'improvement'],
+      refund: { perWood: 2, refund: 1 },
+    }],
+    desc: '用扩房或建改良时，当回合所花木每 2 块回合末返还 1 块。'
+  },
+
+  // -------- 扩房 / 家庭 --------
+  {
+    id: 'B10', deck: 'B', type: 'minor',
+    name: '篷车', nameEn: 'Caravan',
+    cost: { wood: 3, food: 3 }, banned: true,
+    effects: [{ trigger: 'provideRoom', count: 1 }],
+    desc: '提供 1 人住房（无需真建房）。'
+  },
+  {
+    id: 'B21', deck: 'B', type: 'minor',
+    name: '干草棚', nameEn: 'Hayloft Barn',
+    cost: { wood: 3 }, prereq: '1 occupation', banned: true,
+    effects: [{ trigger: 'onBuy', custom: 'hayloftBarnInit' }],
+    desc: '卡上放 4食；每次得麦取 1食；取空后获得"无房也能生娃"动作。'
+  },
+  {
+    id: 'B22', deck: 'B', type: 'minor',
+    name: '行路靴', nameEn: 'Walking Boots',
+    cost: null, prereq: 'at most 4 people', banned: true,
+    effects: [
+      { trigger: 'onBuy', gain: { food: 2 } },
+      { trigger: 'placeExtraFarmer', removedAtReturnHome: true },
+    ],
+    desc: '立刻 +2食，并从供应堆额外放 1 工人，本轮返乡时移除。'
+  },
+  {
+    id: 'D21', deck: 'D', type: 'minor',
+    name: '发展人口', nameEn: 'Recruitment',
+    cost: { food: 1 }, banned: true,
+    effects: [{
+      trigger: 'minorImprovementAction',
+      fromRound: 5, needRoom: true,
+      replaceAction: 'grow',
+    }],
+    desc: '第 5 轮起，获得次要改良动作时可改为生儿育女（需空房）。'
+  },
+  {
+    id: 'C3', deck: 'C', type: 'minor',
+    name: '马车旅行', nameEn: 'Carriage Trip',
+    cost: null, prereq: '1 farmer still to place', banned: true,
+    effects: [{ trigger: 'onBuy', inWorkPhase: true, extraAction: 'placeFarmer' }],
+    desc: '工作阶段打出可立刻再放 1 工人。'
+  },
+
+  // -------- 食物 / 炉灶 / 烤面包 --------
+  {
+    id: 'A48', deck: 'A', type: 'minor',
+    name: '刨木架', nameEn: 'Shaving Horse',
+    cost: { wood: 1 }, banned: true,
+    effects: [{
+      trigger: 'onObtain', resource: 'wood',
+      exchange: { give: { wood: 1 }, get: { food: 3 } },
+      optionalThreshold: 5, mandatoryThreshold: 7,
+    }],
+    desc: '每次获得 ≥1 木后，若手中 ≥5木可把 1木换3食；≥7木必须换。'
+  },
+  {
+    id: 'B67', deck: 'B', type: 'minor',
+    name: '手推车', nameEn: 'Hand Truck',
+    cost: { wood: 1 },
+    effects: [{
+      trigger: 'beforeBake',
+      gain: { grain: 'farmersOnAccumulationSpaces' },
+    }],
+    desc: '烤面包前，每个在累积格上的工人 +1麦。'
+  },
+  {
+    id: 'D66', deck: 'D', type: 'minor',
+    name: '陶器坊', nameEn: 'Potter Ceramics',
+    cost: null,
+    effects: [{
+      trigger: 'beforeBake',
+      optional: true,
+      exchange: { give: { clay: 1 }, get: { grain: 1 } },
+    }],
+    desc: '烤面包前可把 1砖换成 1麦。'
+  },
+  {
+    id: 'C63', deck: 'C', type: 'minor',
+    name: '精酿啤酒坊', nameEn: 'Craft Brewery',
+    cost: { wood: 2, clay: 1 }, banned: true,
+    effects: [{
+      trigger: 'onHarvestFeed',
+      pay: { grain: 1 }, payFromField: { grain: 1 },
+      gain: { food: 4 }, score: 2,
+    }],
+    desc: '收获喂食阶段，可弃手中 1麦+田里 1麦 → +4食+2分。'
+  },
+  {
+    id: 'B49', deck: 'B', type: 'minor',
+    name: '天平', nameEn: 'Scales',
+    cost: { wood: 1 }, prereq: 'no occupations',
+    effects: [{
+      trigger: 'afterPlayCard', appliesTo: ['occupation', 'improvement'],
+      condition: 'occCountEqualsImpCount', gain: { food: 2 },
+    }],
+    desc: '每次打出职业或改良后，若场上职业与改良数量相等 → +2食。'
+  },
+
+  // -------- 种田 / 栅栏 --------
+  {
+    id: 'D19', deck: 'D', type: 'minor',
+    name: '碎土犁', nameEn: 'Pulverizer Plow',
+    cost: { wood: 2 }, prereq: '1 occupation', banned: true,
+    effects: [{
+      trigger: 'onCollect', resource: 'clay',
+      optional: true,
+      pay: { clay: 1 }, payToSpace: true,
+      extraAction: 'plow1',
+    }],
+    desc: '取砖后可花 1砖放回该格犁 1 田。'
+  },
+  {
+    id: 'A83', deck: 'A', type: 'minor',
+    name: '牧杖', nameEn: "Shepherd's Crook",
+    cost: { wood: 1 },
+    effects: [{
+      trigger: 'afterFence', minPastureSize: 4,
+      gain: { sheep: 2 }, perPasture: true,
+    }],
+    desc: '围出 ≥4 格的牧场时，立即在该牧场得 2 只羊。'
+  },
+
+  // -------- 改良 / 职业引擎 --------
+  {
+    id: 'A82', deck: 'A', type: 'minor',
+    name: '工作证', nameEn: 'Work Certificate',
+    cost: { food: 1 }, prereq: '3 occupations', banned: true,
+    effects: [{ trigger: 'afterAnyAction', custom: 'workCertificateTakeOne' }],
+    desc: '每次行动后，可从任意积 ≥4 建材的累积格白拿 1 建材。'
+  },
+  {
+    id: 'C27', deck: 'C', type: 'minor',
+    name: '蓝图', nameEn: 'Blueprint',
+    cost: { food: 1 },
+    effects: [{
+      trigger: 'minorImprovementAction',
+      allowMajors: ['joinery', 'pottery', 'basketmakersWorkshop'],
+      improvementCost: { discount: { stone: 1 }, onlyMajors: true },
+    }],
+    desc: '次要改良动作也可建木工房/陶工房/编笼工房，各 −1石。'
+  },
+  {
+    id: 'C28', deck: 'C', type: 'minor',
+    name: '教师讲台', nameEn: "Teacher's Desk",
+    cost: { wood: 1 }, prereq: '1 occupation', banned: true,
+    effects: [{
+      trigger: 'onActionSpace', space: 'majorImprovementOrRenoMajor',
+      optional: true, pay: { food: 1 }, effect: 'playOccupation',
+    }],
+    desc: '用主要改良或翻修+发展卡格时，可花 1食打 1 张职业。'
+  },
+
+  // -------- 终局 / 计分 --------
+  {
+    id: 'A33', deck: 'A', type: 'minor',
+    name: '大农场', nameEn: 'Big Country',
+    cost: null, prereq: 'all farmyard spaces used', banned: true,
+    effects: [{
+      trigger: 'onBuy',
+      gain: { score: 'roundsLeft', food: '2xRoundsLeft' },
+    }],
+    desc: '农场所有格子都使用后打出：每剩余 1 轮 +1分 +2食。'
+  },
+  {
+    id: 'A39', deck: 'A', type: 'minor',
+    name: '礼拜堂', nameEn: 'Chapel',
+    cost: { wood: 3, clay: 2 }, prereq: '2 occupations', vp: 3, banned: true,
+    effects: [{
+      trigger: 'provideActionSpace',
+      score: 3,
+      othersPay: { grain: 1, to: 'owner' },
+    }],
+    desc: '成为全员可用的行动格；使用者 +3分，他人使用先付你 1麦。'
+  },
+  {
+    id: 'C31', deck: 'C', type: 'minor',
+    name: '写作室', nameEn: 'Writing Chamber',
+    cost: { wood: 2 }, banned: true,
+    effects: [{ trigger: 'endScoring', kind: 'negScoreToPos', max: 7 }],
+    desc: '计分时把你所有负分的绝对值转为加分（最多 +7）。'
+  },
+  {
+    id: 'D33', deck: 'D', type: 'minor',
+    name: '避暑屋', nameEn: 'Summer House',
+    cost: { wood: 3, stone: 1 }, prereq: 'still in wooden house', banned: true,
+    effects: [{
+      trigger: 'endScoring', kind: 'adjacentFreeToStoneHouse',
+      scorePer: 2,
+    }],
+    desc: '石屋时，每块与房屋正交相邻的空格 +2分（空格仍扣 −1）。'
+  },
+
+  // -------- 其他 --------
+  {
+    id: 'B77', deck: 'B', type: 'minor',
+    name: '泥坑', nameEn: 'Loam Pit',
+    cost: { food: 1 }, prereq: '3 occupations', vp: 1,
+    effects: [{
+      trigger: 'onActionSpace', space: 'dayLaborer',
+      gain: { clay: 3 },
+    }],
+    desc: '每次用临时工格 +3砖。'
+  },
+];
+
+// ======================== Exports ========================
+
+const ALL_CARDS = [...OCCUPATIONS, ...MINORS];
+
+const CARDS_BY_ID = Object.fromEntries(ALL_CARDS.map(c => [c.id, c]));
+
+function getCard(id) { return CARDS_BY_ID[id] || null; }
+
+function dealOpeningHands(rng = Math.random) {
+  // Shuffle and deal 7 occupations + 7 minors to each of 4 players.
+  const occs = [...OCCUPATIONS];
+  const mins = [...MINORS];
+  const shuffle = arr => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+  shuffle(occs);
+  shuffle(mins);
+  const hands = [];
+  for (let p = 0; p < 4; p++) {
+    hands.push({
+      playerId: p,
+      occupations: occs.slice(p * 7, p * 7 + 7),
+      minors: mins.slice(p * 7, p * 7 + 7),
+    });
+  }
+  return hands;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { OCCUPATIONS, MINORS, ALL_CARDS, CARDS_BY_ID, getCard, dealOpeningHands };
+}
+
+
+// ===== js/engine/GameState.js =====
+/**
+ * GameState - Pure data container for an Agricola game.
+ * No DOM, no side effects, fully serializable.
+ */
+
+function createPlayer(id, name, type) {
+  return {
+    id,
+    name,
+    type, // 'human' | 'ai'
+    res: {
+      wood: 0, clay: 0, reed: 0, stone: 0,
+      food: id === 0 ? 2 : 3,
+      grain: 0, veg: 0,
+      workers: 2, maxWorkers: 2,
+    },
+    farm: Array(15).fill(0),      // 0=empty, 1=room, 2=field, 5=stable
+    farmCounts: Array(15).fill(0), // crop remaining rounds
+    farmContent: Array(15).fill(null), // 'grain' | 'veg'
+    fences: new Set(),
+    stablesCount: 0,
+    houseType: 'wood', // wood -> clay -> stone
+    majors: [],
+    occupations: [],       // played occupation card ids
+    minorImprovements: [], // played minor improvement card ids
+    occupationHand: [],    // card objects dealt at game start
+    minorHand: [],
+    cardRuntime: {},       // per-card runtime state keyed by cardId
+    begging: 0,
+    animals: { sheep: 0, boar: 0, cow: 0 },
+    score: 0,
+  };
+}
+
+function createInitialState(numPlayers = 4) {
+  const players = [];
+  const names = ['You', 'AI Red', 'AI Green', 'AI Yellow'];
+  const types = ['human', 'ai', 'ai', 'ai'];
+  for (let i = 0; i < numPlayers; i++) {
+    players.push(createPlayer(i, names[i], types[i]));
+  }
+  // Initial rooms at positions 5, 10
+  players.forEach(p => { p.farm[5] = 1; p.farm[10] = 1; });
+
+  return {
+    players,
+    round: 1,
+    startPlayer: Math.floor(Math.random() * numPlayers),
+    nextStartPlayer: 0,
+    turnIdx: 0,
+    numPlayers,
+    occupied: {},
+    roundCards: [],
+    deck: [],
+    majorMarket: [],
+    phase: 'work',
+    harvestQueue: [],
+    harvestIdx: 0,
+    log: [],
+  };
+}
+
+// Deep clone for simulation (MCTS etc.)
+function cloneState(state) {
+  const cloned = {
+    ...state,
+    occupied: { ...state.occupied },
+    roundCards: state.roundCards.map(a => ({ ...a })),
+    deck: state.deck.map(a => ({ ...a })),
+    majorMarket: state.majorMarket.map(m => ({ ...m })),
+    harvestQueue: [...state.harvestQueue],
+    players: state.players.map(p => ({
+      ...p,
+      res: { ...p.res },
+      farm: [...p.farm],
+      farmCounts: [...p.farmCounts],
+      farmContent: [...p.farmContent],
+      fences: new Set(p.fences),
+      majors: [...p.majors],
+      occupations: [...p.occupations],
+      minorImprovements: [...p.minorImprovements],
+      occupationHand: [...p.occupationHand],
+      minorHand: [...p.minorHand],
+      cardRuntime: JSON.parse(JSON.stringify(p.cardRuntime || {})),
+      animals: { ...p.animals },
+    })),
+    log: [], // don't clone log for simulation
+  };
+  return cloned;
+}
+
+
+// ===== js/engine/card-effects.js =====
+/**
+ * CardEffectSystem - dispatches occupation/minor improvement effects in GameEngine.
+ *
+ * Subscribes to engine events and fires card `trigger` hooks. Also exposes
+ * pull-based cost modifiers the engine calls during build/buy/renovate.
+ *
+ * Per-card runtime state lives on `player.cardRuntime[cardId]` (JSON-safe).
+ */
+
+
+class CardEffectSystem {
+  constructor(engine) {
+    this.engine = engine;
+    this.state = engine.state;
+    this.e = engine.events;
+
+    engine.events.on('gameStart', () => this._dealHands());
+    engine.events.on('newRound', () => this._onNewRound());
+    engine.events.on('afterAction', ctx => this._onAfterAction(ctx));
+    engine.events.on('endOfWorkPhase', () => this._onEndOfWorkPhase());
+    engine.events.on('collect', ctx => this._onCollect(ctx));
+    engine.events.on('obtain', ctx => this._onObtain(ctx));
+    engine.events.on('buildRoom', ctx => this._fireTrigger(ctx.player, 'afterBuildRoom', ctx));
+    engine.events.on('fence', ctx => this._fireTrigger(ctx.player, 'afterFence', ctx));
+    engine.events.on('buyMajor', ctx => this._fireTrigger(ctx.player, 'afterBuildMajor', ctx));
+    engine.events.on('renovate', ctx => this._fireTrigger(ctx.player, 'afterRenovation', ctx));
+    engine.events.on('playCard', ctx => this._onPlayCard(ctx));
+    engine.events.on('startOfHarvest', ctx => this._onStartOfHarvest(ctx));
+    engine.events.on('harvestFeed', ctx => this._onHarvestFeed(ctx));
+    engine.events.on('reap', ctx => this._fireTrigger(ctx.player, 'onReap', ctx));
+    engine.events.on('beforeBake', ctx => this._onBeforeBake(ctx));
+  }
+
+  // ======================== Helpers ========================
+
+  _playedCards(p) {
+    const out = [];
+    for (const id of p.occupations) {
+      const c = getCard(id);
+      if (c) out.push(c);
+    }
+    for (const id of p.minorImprovements) {
+      const c = getCard(id);
+      if (c) out.push(c);
+    }
+    return out;
+  }
+
+  _rt(p, cardId, init) {
+    if (!p.cardRuntime[cardId]) p.cardRuntime[cardId] = init || {};
+    return p.cardRuntime[cardId];
+  }
+
+  _canPay(p, cost) {
+    if (!cost) return true;
+    for (const [k, v] of Object.entries(cost)) {
+      if (k === 'begging') continue;
+      if ((p.res[k] ?? 0) < v) return false;
+    }
+    return true;
+  }
+
+  _pay(p, cost) {
+    if (!cost) return;
+    for (const [k, v] of Object.entries(cost)) {
+      if (k === 'begging') p.begging += v;
+      else p.res[k] -= v;
+    }
+  }
+
+  _resolveValue(p, spec, ctx) {
+    if (typeof spec !== 'string') return spec;
+    if (spec === 'perWorker') return p.res.maxWorkers;
+    if (spec === 'roundsLeft') return Math.max(0, MAX_ROUNDS - this.state.round);
+    if (spec === '2xRoundsLeft') return 2 * Math.max(0, MAX_ROUNDS - this.state.round);
+    if (spec === 'equalToStoneInSupply') return p.res.stone;
+    if (spec === 'farmersOnAccumulationSpaces') {
+      // Count workers currently placed on accumulation spaces (approx: count
+      // occupied base/round action spaces that are accumulators).
+      let n = 0;
+      const occ = this.state.occupied;
+      for (const a of [...this.engine._actionDefs, ...this.state.roundCards]) {
+        if (occ[a.id] === p.id && a.acc) n++;
+      }
+      return n;
+    }
+    return 0;
+  }
+
+  _applyGain(p, gain, ctx) {
+    if (!gain) return;
+    for (const [k, v] of Object.entries(gain)) {
+      const amount = this._resolveValue(p, v, ctx);
+      if (k === 'score') {
+        p._bonusScore = (p._bonusScore || 0) + amount;
+      } else if (k === 'begging') {
+        p.begging += amount;
+      } else if (k === 'sameAnimal' && ctx && ctx.resource) {
+        p.animals[ctx.resource] = (p.animals[ctx.resource] || 0) + amount;
+        this.engine._resolveAnimalOverflow(p);
+      } else if (['sheep', 'boar', 'cow'].includes(k)) {
+        p.animals[k] += amount;
+        this.engine._resolveAnimalOverflow(p);
+      } else if (p.res[k] !== undefined) {
+        const before = p.res[k];
+        p.res[k] += amount;
+        this.e.emit('obtain', { player: p, resource: k, amount, fromCard: true });
+      }
+    }
+  }
+
+  _checkCondition(p, cond, ctx) {
+    if (!cond) return true;
+    if (typeof cond === 'string') {
+      if (cond === 'stone>clay') return p.res.stone > p.res.clay;
+      if (cond === 'twoRoomWoodHouse') {
+        const rooms = p.farm.filter(t => t === 1).length;
+        return rooms === 2 && p.houseType === 'wood';
+      }
+      if (cond === 'occCountEqualsImpCount') {
+        return p.occupations.length === p.minorImprovements.length + p.majors.length;
+      }
+      if (cond === 'spaceExactlyOne') return ctx && ctx.amount === 1;
+      return true;
+    }
+    if (typeof cond === 'object') {
+      if (cond.roomsAtLeast != null) {
+        if (p.farm.filter(t => t === 1).length < cond.roomsAtLeast) return false;
+      }
+      if (cond.workersExactly != null && p.res.maxWorkers !== cond.workersExactly) return false;
+      if (cond.woodAtLeast != null && p.res.wood < cond.woodAtLeast) return false;
+    }
+    return true;
+  }
+
+  _roomCount(p) { return p.farm.filter(t => t === 1).length; }
+
+  // ======================== Game start ========================
+
+  _dealHands() {
+    const hands = dealOpeningHands();
+    for (const h of hands) {
+      const p = this.state.players[h.playerId];
+      if (!p) continue;
+      p.occupationHand = h.occupations.map(c => ({ ...c }));
+      p.minorHand = h.minors.map(c => ({ ...c }));
+    }
+  }
+
+  // ======================== Card play ========================
+
+  prereqOk(p, card) {
+    const pr = card.prereq;
+    if (!pr) return true;
+    const s = pr.toLowerCase();
+    if (s.includes('3 occupations')) return p.occupations.length >= 3;
+    if (s.includes('1 occupation')) return p.occupations.length >= 1;
+    if (s.includes('no occupations')) return p.occupations.length === 0;
+    if (s.includes('all farmyard')) return p.farm.every(t => t !== 0);
+    if (s.includes('at most 4 people')) return p.res.maxWorkers <= 4;
+    if (s.includes('wooden house')) return p.houseType === 'wood';
+    if (s.includes('1 farmer still')) return p.res.workers > 0;
+    return true;
+  }
+
+  _onPlayCard({ player, card }) {
+    this._fireTrigger(player, 'onBuy', { card });
+    // Patron (D152): before playing each SUBSEQUENT occupation, +2 food.
+    // We model it as: whenever an occupation is played and player already has
+    // D152 in play, +2 food. (The +2 is supposed to come before paying cost,
+    // but occupations here are free via Lesson, so timing doesn't matter.)
+    if (card.type === 'occupation' && player.occupations.includes('D152') && card.id !== 'D152') {
+      player.res.food += 2;
+    }
+  }
+
+  playOccupation(p, cardId) {
+    const idx = p.occupationHand.findIndex(c => c.id === cardId);
+    if (idx < 0) return false;
+    const card = p.occupationHand.splice(idx, 1)[0];
+    p.occupations.push(card.id);
+    this.e.emit('playCard', { player: p, card });
+    return true;
+  }
+
+  playMinor(p, cardId) {
+    const idx = p.minorHand.findIndex(c => c.id === cardId);
+    if (idx < 0) return false;
+    const card = p.minorHand[idx];
+    if (!this.prereqOk(p, card)) return false;
+    if (card.cost && !this._canPay(p, card.cost)) return false;
+    p.minorHand.splice(idx, 1);
+    if (card.cost) this._pay(p, card.cost);
+    p.minorImprovements.push(card.id);
+    this.e.emit('playCard', { player: p, card });
+    return true;
+  }
+
+  // ======================== Event handlers ========================
+
+  _onNewRound() {
+    // startOfTurn for the first player of the round; startOfWork for all.
+    for (const p of this.state.players) {
+      this._fireTrigger(p, 'startOfWork', {});
+    }
+    // startOfTurn fires for each player when their turn begins; approximate by
+    // firing for current player now and advancing via afterAction.
+    this._fireTrigger(this.engine.currentPlayer, 'startOfTurn', {});
+  }
+
+  _onAfterAction({ player, action, choices, result }) {
+    const ctx = { action, choices, result };
+    // Re-fire startOfTurn for the next current player.
+    this._fireTrigger(this.engine.currentPlayer, 'startOfTurn', {});
+
+    // onActionSpace: match by mode / id.
+    this._fireTrigger(player, 'onActionSpace', { ...ctx, space: action.mode || action.id });
+
+    // afterPlayCard for scales-like triggers after playing a card this action.
+    if (result && result.card) {
+      this._fireTrigger(player, 'afterPlayCard', { ...ctx, card: result.card });
+    }
+
+    // afterAnyAction (D92 grow, A82 work certificate).
+    this._fireTrigger(player, 'afterAnyAction', ctx);
+
+    // endOfTurnAfterPay (D74 royal wood refund).
+    this._fireTrigger(player, 'endOfTurnAfterPay', ctx);
+  }
+
+  _onCollect({ player, action, resource, amount }) {
+    const ctx = { action, resource, amount };
+    // onCollect fires for specific resource or 'animal'.
+    for (const card of this._playedCards(player)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'onCollect') continue;
+        if (eff.resource !== resource && !(eff.resource === 'animal' && ['sheep', 'boar', 'cow'].includes(resource))) continue;
+        if (!this._checkCondition(player, eff.condition, ctx)) continue;
+        this._applyCollectEffect(player, card, eff, ctx);
+      }
+    }
+  }
+
+  _applyCollectEffect(p, card, eff, ctx) {
+    // Optional pay-to-space effects: auto-trigger if affordable & beneficial.
+    if (eff.payToSpace && eff.pay) {
+      if (!this._canPay(p, eff.pay)) return;
+      // Only auto-do if there is a gain.
+      if (!eff.gain && !eff.extraAction) return;
+      this._pay(p, eff.pay);
+      if (eff.extraAction === 'plow1') {
+        const idx = this.engine._findPlowTile(p);
+        if (idx >= 0) p.farm[idx] = 2;
+      }
+      if (eff.gain) this._applyGain(p, eff.gain, ctx);
+      return;
+    }
+    if (eff.optional && eff.extraAction === 'build1Stable') {
+      // A15 carpenter's axe: build 1 stable at cost override if wood>=7.
+      if (p.res.wood >= (eff.costOverride?.wood ?? 2) && p.stablesCount < 4) {
+        const idx = this.engine._findStableTile(p);
+        if (idx >= 0) {
+          p.res.wood -= eff.costOverride?.wood ?? 2;
+          p.farm[idx] = 5;
+          p.stablesCount++;
+        }
+      }
+      return;
+    }
+    if (eff.optional && eff.extraAction === 'fenceWithTakenWood') {
+      // B15 carpenter's bench: 1 free fence segment now.
+      if (p.fences.size < LIMIT_FENCES) {
+        p.fences.add(`b15-${p.fences.size}`);
+        this.engine._maybePlacePastureTiles(p);
+      }
+      return;
+    }
+    if (eff.optional && eff.leaveOnSpace) {
+      // D138 pet lover: leave the animal, take same + bonus from supply.
+      // We already collected into animals; "leave on space" = put it back by
+      // decrementing, then gain bonus. Since we took from accumulator which
+      // reset to 0, place 1 back onto the space.
+      if (ctx.action) ctx.action.cur = 1;
+      p.animals[ctx.resource] -= 1;
+      this._applyGain(p, eff.gain, ctx);
+      return;
+    }
+    if (eff.gain) this._applyGain(p, eff.gain, ctx);
+  }
+
+  _onObtain({ player, resource, amount, fromCard }) {
+    // A48 Shaving Horse: wood→food exchange.
+    if (resource === 'wood' && player.minorImprovements.includes('A48')) {
+      const mandatory = player.res.wood >= 7;
+      const optional = player.res.wood >= 5;
+      if (mandatory || optional) {
+        // Auto-exchange one wood per obtain for safety at high counts.
+        player.res.wood -= 1;
+        player.res.food += 3;
+      }
+    }
+    // E103 Wolf: match top of stack.
+    if (player.occupations.includes('E103')) {
+      const rt = this._rt(player, 'E103');
+      if (rt.stack && rt.stack.length > 0) {
+        const top = rt.stack[rt.stack.length - 1];
+        if (top === resource) {
+          rt.stack.pop();
+          player.res[resource] = (player.res[resource] || 0) + 1; // take the stacked good
+          player.animals.boar += 1;
+          this.engine._resolveAnimalOverflow(player);
+        }
+      }
+    }
+  }
+
+  _onEndOfWorkPhase() {
+    for (const p of this.state.players) {
+      this._fireTrigger(p, 'endOfWorkPhase', {});
+    }
+  }
+
+  _onStartOfHarvest() {
+    for (const p of this.state.players) {
+      // D97 begging student: free occupation at harvest start.
+      if (p.occupations.includes('D97')) {
+        if (p.occupationHand.length > 0) {
+          this.playOccupation(p, p.occupationHand[0].id);
+        }
+      }
+    }
+  }
+
+  _onHarvestFeed({ player }) {
+    if (!player) return;
+    // C63 Craft Brewery: discard 1 grain hand + 1 grain field → 4 food + 2 score.
+    if (player.minorImprovements.includes('C63')) {
+      if (player.res.grain >= 1) {
+        const fieldIdx = player.farm.findIndex((t, i) => t === 2 && player.farmContent[i] === 'grain' && player.farmCounts[i] > 0);
+        if (fieldIdx >= 0) {
+          player.res.grain -= 1;
+          player.farmCounts[fieldIdx] -= 1;
+          if (player.farmCounts[fieldIdx] === 0) player.farmContent[fieldIdx] = null;
+          player.res.food += 4;
+          player._bonusScore = (player._bonusScore || 0) + 2;
+        }
+      }
+    }
+  }
+
+  _onBeforeBake({ player }) {
+    for (const card of this._playedCards(player)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'beforeBake') continue;
+        if (eff.exchange) {
+          // D66 potter: 1 clay → 1 grain, optional (auto if clay available).
+          const give = eff.exchange.give;
+          const get = eff.exchange.get;
+          if (this._canPay(player, give)) {
+            this._pay(player, give);
+            this._applyGain(player, get, {});
+          }
+        } else if (eff.gain) {
+          this._applyGain(player, eff.gain, {});
+        }
+      }
+    }
+  }
+
+  // ======================== Generic trigger firing ========================
+
+  _fireTrigger(player, trigger, ctx) {
+    for (const card of this._playedCards(player)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== trigger) continue;
+        this._applyEffect(player, card, eff, ctx || {});
+      }
+    }
+  }
+
+  _applyEffect(p, card, eff, ctx) {
+    // Round gating.
+    if (eff.fromRound && this.state.round < eff.fromRound) return;
+
+    switch (eff.trigger) {
+      case 'onBuy':
+        this._onBuyEffect(p, card, eff, ctx);
+        break;
+      case 'endOfWorkPhase':
+      case 'startOfTurn':
+      case 'afterBuildRoom':
+      case 'afterFence':
+      case 'afterBuildMajor':
+      case 'afterRenovation':
+        if (!this._checkCondition(p, eff.condition, ctx)) return;
+        if (eff.gain) this._applyGain(p, eff.gain, ctx);
+        if (eff.choice) this._applyChoice(p, eff.choice, ctx);
+        if (eff.effect === 'grow' && eff.needRoom && this._roomCount(p) > p.res.maxWorkers) {
+          if (p.res.maxWorkers < 5) {
+            p.res.maxWorkers++;
+            if (eff.scorePenalty) p._bonusScore = (p._bonusScore || 0) - eff.scorePenalty;
+          }
+        }
+        if (eff.effect === 'freeOccupation') {
+          const n = eff.count || 1;
+          for (let i = 0; i < n && p.occupationHand.length > 0; i++) {
+            this.playOccupation(p, p.occupationHand[0].id);
+          }
+        }
+        if (eff.majorIds && ctx.major && eff.majorIds.includes(ctx.major.type)) {
+          if (eff.effect === 'freeOccupation') {
+            const n = eff.count || 1;
+            for (let i = 0; i < n && p.occupationHand.length > 0; i++) {
+              this.playOccupation(p, p.occupationHand[0].id);
+            }
+          }
+        }
+        if (eff.minPastureSize && ctx.pastureSize >= eff.minPastureSize) {
+          if (eff.gain) this._applyGain(p, eff.gain, ctx);
+        }
+        break;
+      case 'onActionSpace':
+        this._onActionSpace(p, card, eff, ctx);
+        break;
+      case 'afterAnyAction':
+        this._afterAnyAction(p, card, eff, ctx);
+        break;
+      case 'endOfTurnAfterPay':
+        this._endOfTurnAfterPay(p, card, eff, ctx);
+        break;
+      case 'startOfWork':
+        this._startOfWork(p, card, eff);
+        break;
+      case 'provideRoom':
+      case 'placeExtraFarmer':
+      case 'ignoreOccupancy':
+      case 'roomCost':
+      case 'fenceCost':
+      case 'stableCost':
+      case 'improvementCost':
+      case 'renovationCost':
+      case 'minorImprovementAction':
+      case 'onBake':
+      case 'endScoring':
+      case 'beforeEndOfGame':
+      case 'afterFarmFull':
+      case 'onReap':
+      case 'beforePlayOccupation':
+        // Handled in dedicated hooks / scoring.
+        break;
+      default:
+        break;
+    }
+  }
+
+  _onBuyEffect(p, card, eff, ctx) {
+    if (eff.custom === 'wolfInit') {
+      this._rt(p, 'E103', { stack: ['clay', 'wood', 'grain'] });
+      return;
+    }
+    if (eff.custom === 'hayloftBarnInit') {
+      this._rt(p, 'B21', { food: 4, empty: false });
+      return;
+    }
+    if (eff.gainWoodByRoundsLeft) {
+      const left = Math.max(0, MAX_ROUNDS - this.state.round);
+      const arr = eff.gainWoodByRoundsLeft;
+      const w = arr[Math.min(left, arr.length - 1)] || 0;
+      if (w) p.res.wood += w;
+    }
+    if (eff.gain) this._applyGain(p, eff.gain, ctx);
+    if (eff.inWorkPhase && eff.extraAction === 'placeFarmer') {
+      // C3 carriage trip: one extra worker placement this action.
+      p.res.workers += 1;
+    }
+    // B22 walking boots second effect: +1 worker for the rest of this round.
+    if (card.id === 'B22') {
+      p.res.maxWorkers += 1;
+      p.res.workers += 1;
+      this._rt(p, 'B22', {}).extraWorker = 1;
+    }
+  }
+
+  _onActionSpace(p, card, eff, ctx) {
+    const space = eff.space;
+    const act = ctx.action;
+    const match =
+      space === act.id ||
+      space === act.mode ||
+      (space === 'lessons' && (act.mode === 'lesson' || act.mode === 'lesson2')) ||
+      (space === 'majorImprovementOrRenoMajor' && (act.mode === 'major' || act.mode === 'reno_major')) ||
+      (space === 'majorImprovement' && act.mode === 'major');
+    if (!match) return;
+    if (!this._checkCondition(p, eff.condition, ctx)) return;
+
+    // Trade teacher (D137): shop after lessons.
+    if (eff.custom === 'tradeTeacherShop') {
+      this._tradeTeacher(p, eff);
+      return;
+    }
+
+    if (eff.extraAction === 'construct1roomOrRenovate') {
+      // B87 cottager: free extra build/reno (normal cost). Try build room first.
+      if (this.engine._canBuildRoom(p)) {
+        this.engine._buildRoomAuto(p);
+      } else {
+        const r = this.engine._canRenovate(p);
+        if (r.ok) this.engine._doRenovate(p);
+      }
+      return;
+    }
+    if (eff.extraAction === 'plow1') {
+      const idx = this.engine._findPlowTile(p);
+      if (idx >= 0) p.farm[idx] = 2;
+      return;
+    }
+    if (eff.extra) {
+      // C126 excavator: optional pay food → stone.
+      if (eff.extra.pay && this._canPay(p, eff.extra.pay)) {
+        this._pay(p, eff.extra.pay);
+        this._applyGain(p, eff.extra.gain, ctx);
+      }
+    }
+    if (eff.pay && !eff.gain) return;
+    if (eff.optional && eff.pay) {
+      if (this._canPay(p, eff.pay)) {
+        this._pay(p, eff.pay);
+        if (eff.gain) this._applyGain(p, eff.gain, ctx);
+        if (eff.effect === 'playOccupation' && p.occupationHand.length > 0) {
+          this.playOccupation(p, p.occupationHand[0].id);
+        }
+      }
+      return;
+    }
+    if (eff.gain) {
+      // A138 harpooner: pay wood for perWorker food+reed.
+      if (eff.pay && !this._canPay(p, eff.pay)) return;
+      if (eff.pay) this._pay(p, eff.pay);
+      this._applyGain(p, eff.gain, ctx);
+    }
+    if (eff.fromRound && eff.choice && this.state.round >= eff.fromRound) {
+      this._applyChoice(p, eff.choice, ctx);
+    }
+  }
+
+  _applyChoice(p, choice, ctx) {
+    // Pick the first option (AI simplification). Each option is a gain obj.
+    if (Array.isArray(choice) && choice.length > 0) {
+      this._applyGain(p, choice[0], ctx);
+    }
+  }
+
+  _tradeTeacher(p, eff) {
+    // Auto-buy up to 2 different goods: prefer sheep, stone, boar, grain.
+    const prefs = ['sheep', 'stone', 'boar', 'grain', 'cow', 'veg'];
+    let bought = 0;
+    for (const res of prefs) {
+      if (bought >= (eff.maxDifferent || 2)) break;
+      const item = eff.shop.find(s => s.res === res);
+      if (!item) continue;
+      if (p.res.food >= item.cost) {
+        p.res.food -= item.cost;
+        if (['sheep', 'boar', 'cow'].includes(res)) {
+          p.animals[res] += 1;
+          this.engine._resolveAnimalOverflow(p);
+        } else {
+          p.res[res] += 1;
+        }
+        bought++;
+      }
+    }
+  }
+
+  _afterAnyAction(p, card, eff, ctx) {
+    if (eff.custom === 'workCertificateTakeOne') {
+      // A82: take 1 building resource from any accumulator with >=4.
+      for (const a of [...this.engine._actionDefs, ...this.state.roundCards]) {
+        if (a.acc && ['wood', 'clay', 'reed', 'stone'].includes(a.res) && a.cur >= 4) {
+          a.cur -= 1;
+          p.res[a.res] += 1;
+          return;
+        }
+      }
+      return;
+    }
+    if (eff.effect === 'grow' && eff.needRoom) {
+      if (this.state.round >= (eff.fromRound || 0) && this._roomCount(p) > p.res.maxWorkers) {
+        if (p.res.maxWorkers < 5) {
+          p.res.maxWorkers++;
+          if (eff.scorePenalty) p._bonusScore = (p._bonusScore || 0) - eff.scorePenalty;
+        }
+      }
+    }
+  }
+
+  _endOfTurnAfterPay(p, card, eff, ctx) {
+    // D74 Royal Wood: refund 1 wood per 2 spent on farmExpansion/improvement this turn.
+    if (eff.appliesTo && eff.refund) {
+      const mode = ctx.action && ctx.action.mode;
+      const id = ctx.action && ctx.action.id;
+      const relevant = (mode === 'build_menu') || (mode === 'major') || (mode === 'reno_major') || (id === 'act_build');
+      if (!relevant) return;
+      const perWood = eff.refund.perWood;
+      const refundPer = eff.refund.refund;
+      // Approximate: count wood spent by comparing... we don't track; use
+      // result.woodSpent if engine provides it.
+      const spent = (ctx.result && ctx.result.woodSpent) || 0;
+      const back = Math.floor(spent / perWood) * refundPer;
+      if (back > 0) p.res.wood += back;
+    }
+  }
+
+  _startOfWork(p, card, eff) {
+    if (eff.custom === 'nightworkerPlaceFarmer') {
+      // C125 Nightworker: for each building resource at 0, take from the
+      // largest accumulator of that type (headless approximation of placing
+      // a farmer ahead of the round).
+      for (const res of ['wood', 'clay', 'reed', 'stone']) {
+        if (p.res[res] > 0) continue;
+        let best = null;
+        for (const a of [...this.engine._actionDefs, ...this.state.roundCards]) {
+          if (a.res === res && a.acc && a.cur > 0 && (!best || a.cur > best.cur)) best = a;
+        }
+        if (best) {
+          p.res[res] += best.cur;
+          best.cur = 0;
+        }
+      }
+    }
+  }
+
+  // ======================== Pull hooks (cost modifiers) ========================
+
+  getRoomCost(p, base, roomType, count) {
+    const cost = { ...base };
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'roomCost') continue;
+        if (eff.onlyRoomType && eff.onlyRoomType !== roomType) continue;
+        if (eff.replace) {
+          // B145 brushwood: replace reed with wood (1:1 per reed).
+          for (const [from, to] of Object.entries(eff.replace)) {
+            if (cost[from]) {
+              cost[to] = (cost[to] || 0) + cost[from];
+              cost[from] = 0;
+            }
+          }
+        }
+        if (eff.amount) {
+          // B126 carpenter / B13 carpenter parlor: flat per-room material.
+          cost[roomType] = eff.amount * count;
+          if (eff.reed != null) cost.reed = eff.reed * count;
+        }
+        if (eff.discount) {
+          for (const [k, v] of Object.entries(eff.discount)) {
+            cost[k] = Math.max(0, (cost[k] || 0) - v * (eff.perRoom ? count : 1));
+          }
+        }
+        if (eff.discountByRoomType && count >= (eff.minRooms || 1)) {
+          const d = eff.discountByRoomType[roomType] || 0;
+          cost[roomType] = Math.max(0, (cost[roomType] || 0) - d);
+        }
+      }
+    }
+    return cost;
+  }
+
+  getStableCost(p, nth) {
+    let wood = 2;
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'stableCost') continue;
+        if (eff.nthDiscount && eff.nthDiscount[nth]) {
+          wood = Math.max(0, wood - eff.nthDiscount[nth]);
+        }
+      }
+    }
+    return { wood };
+  }
+
+  getFenceCanUseClay(p) {
+    return this._playedCards(p).some(c => c.effects.some(e => e.trigger === 'fenceCost' && e.canUseClay));
+  }
+
+  getFenceFreeSegments(p) {
+    let free = 0;
+    const freeSet = new Set();
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'fenceCost') continue;
+        if (eff.freeSegments) eff.freeSegments.forEach(s => freeSet.add(s));
+      }
+    }
+    return freeSet;
+  }
+
+  getImprovementCost(p, major) {
+    const cost = { ...(major.cost || {}) };
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'improvementCost') continue;
+        if (eff.majorIds && !eff.majorIds.includes(major.type)) continue;
+        if (eff.onlyMajors && major.type === 'minor') continue;
+        if (eff.discount) {
+          for (const [k, v] of Object.entries(eff.discount)) {
+            cost[k] = Math.max(0, (cost[k] || 0) - v);
+          }
+        }
+      }
+    }
+    return cost;
+  }
+
+  getRenovationCost(p, base) {
+    const cost = { ...base };
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'renovationCost') continue;
+        if (eff.replace) {
+          for (const [from, to] of Object.entries(eff.replace)) {
+            if (cost[from]) {
+              cost[to] = (cost[to] || 0) + cost[from];
+              cost[from] = 0;
+            }
+          }
+        }
+        if (eff.replaceReedWithWood) {
+          cost.wood = (cost.wood || 0) + (cost.reed || 0);
+          cost.reed = 0;
+        }
+        if (eff.discount) {
+          for (const [k, v] of Object.entries(eff.discount)) {
+            cost[k] = Math.max(0, (cost[k] || 0) - v);
+          }
+        }
+      }
+    }
+    return cost;
+  }
+
+  getProvidedRooms(p) {
+    let n = 0;
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger === 'provideRoom') n += eff.count || 1;
+      }
+    }
+    return n;
+  }
+
+  canIgnoreOccupancy(p, act) {
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger !== 'ignoreOccupancy') continue;
+        if (eff.except && eff.except.includes(act.id)) continue;
+        if (this._checkCondition(p, eff.condition, {})) return true;
+      }
+    }
+    return false;
+  }
+
+  canGrowWithoutRoom(p) {
+    // B21 hayloft barn: when food emptied, allows grow without room.
+    if (p.minorImprovements.includes('B21')) {
+      const rt = this._rt(p, 'B21', { food: 4, empty: false });
+      if (rt.empty) return true;
+    }
+    return false;
+  }
+
+  // ======================== Endgame scoring ========================
+
+  scoreCardBonuses(p) {
+    let bonus = p._bonusScore || 0;
+
+    // A39 chapel: +3 flat (already vp:3 but ensure).
+    // (majors/minors with `vp` are scored in calculateScore; card-level scoring
+    // triggers handled here.)
+
+    for (const card of this._playedCards(p)) {
+      for (const eff of card.effects) {
+        if (eff.trigger === 'endScoring') {
+          bonus += this._endScoringBonus(p, card, eff);
+        } else if (eff.trigger === 'beforeEndOfGame') {
+          bonus += this._beforeEndOfGame(p, eff);
+        } else if (eff.trigger === 'onReap') {
+          // B132 estate master: handled during reap; nothing to add here.
+        }
+      }
+    }
+    return bonus;
+  }
+
+  _endScoringBonus(p, card, eff) {
+    switch (eff.kind) {
+      case 'improvements': {
+        const count = p.minorImprovements.length + p.majors.length;
+        return eff.map[count] || 0;
+      }
+      case 'mostRooms': {
+        const myRooms = this._roomCount(p);
+        const max = Math.max(...this.state.players.map(pl => this._roomCount(pl)));
+        return myRooms === max ? eff.score : 0;
+      }
+      case 'negScoreToPos': {
+        // C31 writing chamber: convert begging penalties to positive (capped).
+        const neg = p.begging * 3;
+        return Math.min(eff.max || 7, neg);
+      }
+      case 'adjacentFreeToStoneHouse': {
+        // D33 summer house: +2 per empty tile orthogonally adjacent to a room.
+        if (p.houseType !== 'stone') return 0;
+        let n = 0;
+        for (let i = 0; i < 15; i++) {
+          if (p.farm[i] !== 0) continue;
+          const neigh = [];
+          if (i >= 5) neigh.push(i - 5);
+          if (i < 10) neigh.push(i + 5);
+          if (i % 5 !== 0) neigh.push(i - 1);
+          if (i % 5 !== 4) neigh.push(i + 1);
+          if (neigh.some(x => p.farm[x] === 1)) n++;
+        }
+        return n * (eff.scorePer || 2);
+      }
+      default:
+        return 0;
+    }
+  }
+
+  _beforeEndOfGame(p, eff) {
+    // C99 garden designer: pay food per empty field for bonus points.
+    if (!eff.perEmptyField) return 0;
+    const emptyFields = p.farm.filter(t => t === 0).length;
+    let bonus = 0;
+    for (let i = 0; i < emptyFields; i++) {
+      // Pick the best affordable tier.
+      let picked = null;
+      for (const opt of eff.options) {
+        if (p.res.food >= opt.pay.food) picked = opt;
+      }
+      if (!picked) break;
+      p.res.food -= picked.pay.food;
+      bonus += picked.score;
+    }
+    return bonus;
+  }
+
+  // ======================== Hayloft grain hook ========================
+
+  onGrainObtained(p) {
+    if (p.minorImprovements.includes('B21')) {
+      const rt = this._rt(p, 'B21', { food: 4, empty: false });
+      if (rt.food > 0) {
+        rt.food -= 1;
+        p.res.food += 1;
+        if (rt.food === 0) rt.empty = true;
+      }
+    }
+  }
+}
+
+
+// ===== js/engine/GameEngine.js =====
+/**
+ * GameEngine - Headless Agricola engine.
+ *
+ * Usage:
+ *   const engine = new GameEngine();
+ *   engine.init();
+ *   const actions = engine.getActions();  // available for current player
+ *   engine.applyAction(actions[0]);
+ *   // ... repeat until engine.state.phase === 'ended'
+ *
+ * Events are emitted after each action so card effects can hook in.
+ */
+
+
+// ======================== Event System ========================
+
+class EventEmitter {
+  constructor() { this.listeners = {}; }
+  on(event, fn) {
+    (this.listeners[event] = this.listeners[event] || []).push(fn);
+  }
+  emit(event, data) {
+    (this.listeners[event] || []).forEach(fn => fn(data));
+  }
+}
+
+// ======================== Engine ========================
+
+class GameEngine {
+  constructor(numPlayers = 4, options = {}) {
+    this.numPlayers = numPlayers;
+    this.options = options;
+    this.events = new EventEmitter();
+    this.state = null;
+    this._actionDefs = null;
+  }
+
+  init() {
+    this.state = createInitialState(this.numPlayers);
+    this.state.nextStartPlayer = this.state.startPlayer;
+    this._actionDefs = BASE_ACTIONS
+      .filter(a => !a.players || a.players.includes(this.numPlayers))
+      .map(a => ({ ...a }));
+    this.state.deck = this._buildDeck();
+    this.state.majorMarket = DB_MAJORS.map(m => ({ ...m }));
+    this._unlockRoundCard();
+    this.cards = new CardEffectSystem(this);
+    this.events.emit('gameStart', this.state);
+    return this.state;
+  }
+
+  _buildDeck() {
+    const stages = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    ROUND_CARDS_POOL.forEach(c => stages[c.stage].push({ ...c }));
+    let deck = [];
+    for (let i = 1; i <= 6; i++) {
+      deck = deck.concat(stages[i].sort(() => Math.random() - 0.5));
+    }
+    return deck;
+  }
+
+  // ======================== Turn Management ========================
+
+  get currentPlayer() {
+    const idx = ((this.state.startPlayer + this.state.turnIdx) % this.numPlayers + this.numPlayers) % this.numPlayers;
+    return this.state.players[idx];
+  }
+
+  get isGameOver() {
+    return this.state.phase === 'ended';
+  }
+
+  /**
+   * Return list of legal actions for the current player.
+   * Each action: { id, label, type, ...payload }
+   */
+  getActions() {
+    if (this.isGameOver) return [];
+    const p = this.currentPlayer;
+    if (p.res.workers <= 0) return [];
+
+    const actions = [];
+    const allActs = [...this._actionDefs, ...this.state.roundCards];
+
+    for (const act of allActs) {
+      if (this.state.occupied[act.id] !== undefined && !this._canIgnoreOccupancy(p, act)) continue;
+      const legal = this._isActionLegal(p, act);
+      if (legal.ok) {
+        actions.push({
+          id: act.id,
+          label: act.name,
+          type: act.type,
+          mode: act.mode,
+          res: act.res,
+          amount: act.cur || act.amount || 0,
+          ...legal.extra,
+        });
+      }
+    }
+    return actions;
+  }
+
+  _canIgnoreOccupancy(p, act) {
+    return this.cards && this.cards.canIgnoreOccupancy(p, act);
+  }
+
+  _isActionLegal(p, act) {
+    // Resource actions are always legal (but may give 0)
+    if (act.type === 'res' || act.type === 'res_combo') {
+      // Skip empty accumulators unless it's non-accumulating
+      if (act.type === 'res' && act.acc && act.cur === 0) return { ok: false };
+      return { ok: true };
+    }
+    if (act.mode === 'meeting') return { ok: true };
+    if (act.mode === 'lesson' || act.mode === 'lesson2') {
+      if (!p.occupationHand || p.occupationHand.length === 0) return { ok: false };
+      const cost = this._lessonCost(p, act);
+      return { ok: p.res.food >= cost };
+    }
+    if (act.mode === 'grow_force') return { ok: true };
+    if (act.mode === 'grow') {
+      const rooms = p.farm.filter(t => t === 1).length;
+      const provided = this.cards ? this.cards.getProvidedRooms(p) : 0;
+      if (rooms + provided > p.res.maxWorkers) return { ok: true };
+      if (this.cards && this.cards.canGrowWithoutRoom(p)) return { ok: true };
+      return { ok: false };
+    }
+    if (act.mode === 'plow') {
+      const hasField = p.farm.includes(2);
+      const canPlow = p.farm.some((t, i) => t === 0 && (!hasField || this._hasNeighbor(p, i, 2)));
+      return { ok: canPlow };
+    }
+    if (act.mode === 'sow') {
+      const hasSeeds = p.res.grain > 0 || p.res.veg > 0;
+      const hasField = p.farm.some((t, i) => t === 2 && p.farmContent[i] === null);
+      return { ok: hasSeeds && hasField };
+    }
+    if (act.mode === 'plow_sow') {
+      return { ok: p.farm.some(t => t === 0) && (p.res.grain > 0 || p.res.veg > 0) };
+    }
+    if (act.mode === 'build_menu') {
+      const canRoom = this._canBuildRoom(p);
+      const canStable = p.res.wood >= 2 && p.stablesCount < 4;
+      const hasSpace = p.farm.includes(0);
+      return { ok: hasSpace && (canRoom || canStable) };
+    }
+    if (act.mode === 'fence') {
+      return { ok: p.res.wood >= 1 && p.fences.size < LIMIT_FENCES };
+    }
+    if (act.mode === 'major') {
+      const canBuy = this.state.majorMarket.some(m => this._canAffordCard(p, m));
+      const canPlayMinor = p.minorHand && p.minorHand.some(c =>
+        this.cards.prereqOk(p, c) && this._canAfford(p, c.cost));
+      return { ok: canBuy || canPlayMinor };
+    }
+    if (act.mode === 'reno_major' || act.mode === 'reno_fence') {
+      return { ok: this._canRenovate(p).ok };
+    }
+    return { ok: true };
+  }
+
+  // ======================== Action Execution ========================
+
+  /**
+   * Apply an action. action should be one from getActions(), possibly with
+   * additional choices (tile index, card to buy, etc).
+   *
+   * @param {object} action - { id, choices?: { tileIdx, majorId, ... } }
+   */
+  applyAction(action) {
+    const p = this.currentPlayer;
+    const act = [...this._actionDefs, ...this.state.roundCards].find(a => a.id === action.id);
+    if (!act) throw new Error(`Unknown action: ${action.id}`);
+    if (this.state.occupied[act.id] !== undefined && !this._canIgnoreOccupancy(p, act)) {
+      throw new Error('Action already occupied');
+    }
+
+    const choices = action.choices || {};
+    const result = this._executeAction(p, act, choices) || {};
+
+    // Occupy and advance
+    if (!(this.cards && this.cards.canIgnoreOccupancy(p, act))) {
+      this.state.occupied[act.id] = p.id;
+    }
+    p.res.workers--;
+    this.events.emit('afterAction', { player: p, action: act, choices, result });
+
+    this._advanceTurn();
+  }
+
+  _executeAction(p, act, choices) {
+    const result = {};
+    // Resource collection
+    if (act.type === 'res') {
+      const amt = act.cur || act.amount || 0;
+      if (['sheep', 'boar', 'cow'].includes(act.res)) {
+        p.animals[act.res] += amt;
+        if (act.acc) act.cur = 0;
+        this._resolveAnimalOverflow(p);
+      } else {
+        p.res[act.res] += amt;
+        if (act.acc) act.cur = 0;
+      }
+      this.events.emit('collect', { player: p, action: act, resource: act.res, amount: amt });
+      this.events.emit('obtain', { player: p, resource: act.res, amount: amt });
+      if (act.res === 'grain') this.cards.onGrainObtained(p);
+      return result;
+    }
+    if (act.type === 'res_combo') {
+      p.res.reed++; p.res.stone++; p.res.food++;
+      this.events.emit('obtain', { player: p, resource: 'reed', amount: 1 });
+      this.events.emit('obtain', { player: p, resource: 'stone', amount: 1 });
+      this.events.emit('obtain', { player: p, resource: 'food', amount: 1 });
+      return result;
+    }
+
+    switch (act.mode) {
+      case 'meeting':
+        this.state.nextStartPlayer = p.id;
+        if (choices.minorId) {
+          const card = p.minorHand.find(c => c.id === choices.minorId);
+          if (card && this.cards.playMinor(p, choices.minorId)) result.card = card;
+        } else {
+          const pm = this._pickPlayableMinor(p);
+          if (pm && this.cards.playMinor(p, pm.id)) result.card = pm;
+        }
+        break;
+
+      case 'lesson':
+      case 'lesson2': {
+        const foodCost = this._lessonCost(p, act);
+        p.res.food -= foodCost;
+        let card;
+        if (choices.occId) card = p.occupationHand.find(c => c.id === choices.occId);
+        if (!card && p.occupationHand.length > 0) card = p.occupationHand[0];
+        if (card) {
+          this.cards.playOccupation(p, card.id);
+          result.card = card;
+        }
+        break;
+      }
+
+      case 'grow':
+      case 'grow_force':
+        if (p.res.maxWorkers < 5) p.res.maxWorkers++;
+        break;
+
+      case 'plow': {
+        const idx = choices.tileIdx ?? this._findPlowTile(p);
+        if (idx >= 0) p.farm[idx] = 2;
+        break;
+      }
+
+      case 'sow': {
+        this._autoSow(p);
+        break;
+      }
+
+      case 'plow_sow': {
+        const idx = choices.tileIdx ?? this._findPlowTile(p);
+        if (idx >= 0) {
+          p.farm[idx] = 2;
+          this._sowOnTile(p, idx);
+        }
+        break;
+      }
+
+      case 'build_menu': {
+        const woodBefore = p.res.wood;
+        this._autoBuild(p, choices);
+        result.woodSpent = woodBefore - p.res.wood;
+        if (choices.buildRooms !== false) this.events.emit('buildRoom', { player: p });
+        break;
+      }
+
+      case 'fence': {
+        const woodBefore = p.res.wood;
+        this._autoFence(p, choices);
+        result.woodSpent = woodBefore - p.res.wood;
+        this.events.emit('fence', { player: p, pastureSize: choices.fences || 0 });
+        break;
+      }
+
+      case 'major':
+      case 'reno_major': {
+        if (act.mode === 'reno_major') {
+          this._doRenovate(p);
+          this.events.emit('renovate', { player: p });
+        }
+        if (choices.minorId) {
+          const card = p.minorHand.find(c => c.id === choices.minorId);
+          if (card) {
+            this.cards.playMinor(p, choices.minorId);
+            result.card = card;
+          }
+        } else if (choices.majorId) {
+          this._buyMajor(p, choices.majorId);
+        } else {
+          // Prefer playable minor if strong, else auto-pick best affordable major.
+          const playableMinor = this._pickPlayableMinor(p);
+          if (playableMinor && ((playableMinor.vp || 0) >= 2 || !this._pickBestMajor(p))) {
+            this.cards.playMinor(p, playableMinor.id);
+            result.card = playableMinor;
+          } else {
+            const pick = this._pickBestMajor(p);
+            if (pick) this._buyMajor(p, pick.id);
+          }
+        }
+        break;
+      }
+
+      case 'reno_fence': {
+        this._doRenovate(p);
+        this.events.emit('renovate', { player: p });
+        const woodBefore = p.res.wood;
+        this._autoFence(p, choices);
+        result.woodSpent = woodBefore - p.res.wood;
+        this.events.emit('fence', { player: p, pastureSize: choices.fences || 0 });
+        break;
+      }
+    }
+    return result;
+  }
+
+  // ======================== Round / Harvest ========================
+
+  _advanceTurn() {
+    this.state.turnIdx++;
+
+    // Check if all workers used
+    const allUsed = this.state.players.every(p => p.res.workers <= 0);
+    if (allUsed) {
+      this._endRound();
+      return;
+    }
+
+    // Skip players with no workers remaining
+    let guard = 0;
+    while (guard++ < 20) {
+      const pIdx = ((this.state.startPlayer + this.state.turnIdx) % this.numPlayers + this.numPlayers) % this.numPlayers;
+      if (this.state.players[pIdx].res.workers > 0) break;
+      this.state.turnIdx++;
+    }
+  }
+
+  _endRound() {
+    this.events.emit('endOfWorkPhase', this.state);
+    // B22 walking boots: remove the extra worker added this round.
+    for (const p of this.state.players) {
+      if (p.minorImprovements.includes('B22')) {
+        const rt = this.cards._rt(p, 'B22', {});
+        if (rt.extraWorker) {
+          p.res.maxWorkers = Math.max(2, p.res.maxWorkers - 1);
+          rt.extraWorker = 0;
+        }
+      }
+    }
+    this.state.occupied = {};
+    for (const p of this.state.players) {
+      p.res.workers = p.res.maxWorkers;
+    }
+    // Accumulate resources
+    [...this._actionDefs, ...this.state.roundCards].forEach(a => {
+      if (a.acc) a.cur += a.acc;
+    });
+
+    if (HARVEST_ROUNDS.includes(this.state.round)) {
+      this._doHarvest();
+    } else {
+      this._advanceRound();
+    }
+  }
+
+  _advanceRound() {
+    if (this.state.round >= MAX_ROUNDS) {
+      this._endGame();
+      return;
+    }
+    this.state.round++;
+    // Well: 1 food at the start of each of the next 5 rounds after purchase.
+    for (const p of this.state.players) {
+      const well = p.majors.find(m => m.special === 'well');
+      if (well && well.wellStartRound != null) {
+        const roundsSince = this.state.round - well.wellStartRound;
+        if (roundsSince >= 1 && roundsSince <= 5) p.res.food++;
+      }
+    }
+    this._unlockRoundCard();
+    this.state.startPlayer = this.state.nextStartPlayer;
+    this.state.turnIdx = 0;
+    this.events.emit('newRound', this.state.round);
+  }
+
+  _unlockRoundCard() {
+    if (this.state.deck.length > 0) {
+      const card = this.state.deck.shift();
+      this.state.roundCards.push(card);
+    }
+  }
+
+  _doHarvest() {
+    this.events.emit('startOfHarvest', this.state);
+    this.state.phase = 'harvestField';
+    // 1. Field harvest
+    for (const p of this.state.players) {
+      let reapedVeg = 0;
+      for (let i = 0; i < 15; i++) {
+        if (p.farm[i] === 2 && p.farmCounts[i] > 0) {
+          const kind = p.farmContent[i];
+          p.res[kind]++;
+          this.events.emit('obtain', { player: p, resource: kind, amount: 1 });
+          if (kind === 'veg') reapedVeg++;
+          if (kind === 'grain') this.cards.onGrainObtained(p);
+          p.farmCounts[i]--;
+          if (p.farmCounts[i] === 0) p.farmContent[i] = null;
+        }
+      }
+      if (reapedVeg > 0) this.events.emit('reap', { player: p, resource: 'veg', amount: reapedVeg });
+    }
+    this.events.emit('harvestField', this.state);
+
+    // 2. Feed (auto for AI, human players need choices - for headless we auto-feed)
+    this.state.phase = 'harvestFeed';
+    for (const p of this.state.players) {
+      this.events.emit('harvestFeed', { player: p });
+      this._autoFeed(p);
+    }
+    this.events.emit('harvestFeed', this.state);
+
+    // 3. Breed
+    this.state.phase = 'harvestBreed';
+    for (const p of this.state.players) {
+      for (const type of ['sheep', 'boar', 'cow']) {
+        if (p.animals[type] >= 2) {
+          p.animals[type]++;
+        }
+      }
+      this._resolveAnimalOverflow(p);
+    }
+    this.events.emit('harvestBreed', this.state);
+
+    this.state.phase = 'work';
+    this._advanceRound();
+  }
+
+  _autoFeed(p) {
+    const need = p.res.maxWorkers * 2;
+    let food = p.res.food;
+    let deficit = need - food;
+
+    const cooker = p.majors.find(m => (m.type === 'cook' || m.type === 'bake') && m.cook);
+    const baker = p.majors.find(m => m.bakeRate || m.specialBake);
+
+    // Grain: baked with an oven (bakeRate on fireplaces, specialBake on stone/
+    // clay ovens). Without a baker grain is 1:1 food.
+    if (p.res.grain > 0 && (baker || p.minorImprovements.length > 0)) {
+      this.events.emit('beforeBake', { player: p, context: 'feed' });
+    }
+    if (deficit > 0 && p.res.grain > 0) {
+      if (baker && baker.specialBake) {
+        const inG = baker.specialBake.in;
+        const outF = baker.specialBake.out;
+        const batches = Math.min(Math.floor(p.res.grain / inG), Math.ceil(deficit / outF));
+        if (batches > 0) {
+          p.res.grain -= batches * inG;
+          p.res.food += batches * outF;
+          deficit -= batches * outF;
+        }
+      } else if (baker) {
+        const rate = baker.bakeRate || 1;
+        const take = Math.min(p.res.grain, Math.ceil(deficit / rate));
+        p.res.grain -= take;
+        p.res.food += take * rate;
+        deficit -= take * rate;
+      } else {
+        const take = Math.min(p.res.grain, deficit);
+        p.res.grain -= take;
+        p.res.food += take;
+        deficit -= take;
+      }
+    }
+
+    // Veg is worth cook.veg food each when a cooker is owned (matching the
+    // original game: veg + cooker is the intended farming food engine).
+    if (deficit > 0 && p.res.veg > 0) {
+      const vegFood = cooker ? cooker.cook.veg : 1;
+      const take = Math.min(p.res.veg, Math.ceil(deficit / vegFood));
+      p.res.veg -= take;
+      p.res.food += take * vegFood;
+      deficit -= take * vegFood;
+    }
+
+    if (deficit > 0 && cooker) {
+      for (const type of ['sheep', 'boar', 'cow']) {
+        if (deficit <= 0) break;
+        while (p.animals[type] > 0 && deficit > 0) {
+          p.animals[type]--;
+          p.res.food += cooker.cook[type];
+          deficit -= cooker.cook[type];
+        }
+      }
+    }
+
+    const pay = Math.min(p.res.food, need);
+    p.res.food -= pay;
+    const begging = need - pay;
+    if (begging > 0) p.begging += begging;
+  }
+
+  // ======================== Animal / Capacity ========================
+
+  _resolveAnimalOverflow(p) {
+    // Simplified: if animals exceed capacity, cook if possible, else discard
+    const capacity = this._getAnimalCapacity(p);
+    for (const type of ['sheep', 'boar', 'cow']) {
+      if (p.animals[type] > capacity[type]) {
+        const overflow = p.animals[type] - capacity[type];
+        const cooker = p.majors.find(m => (m.type === 'cook' || m.type === 'bake') && m.cook);
+        if (cooker) {
+          p.res.food += overflow * cooker.cook[type];
+        }
+        p.animals[type] = capacity[type];
+      }
+    }
+  }
+
+  _getAnimalCapacity(p) {
+    // Simplified: each pasture (enclosed area) holds 2 per tile, stable doubles
+    // For headless, give a generous capacity based on fences + stables
+    const fenceCount = p.fences.size;
+    const pastureTiles = Math.max(0, Math.floor(fenceCount / 4)); // rough estimate
+    const stableBonus = p.stablesCount * 2;
+    const total = pastureTiles * 2 + stableBonus + 1; // +1 for house pet
+    return { sheep: total, boar: total, cow: total };
+  }
+
+  // ======================== Building Helpers ========================
+
+  _canBuildRoom(p) {
+    const cost = this._roomCost(p, 1);
+    return this._canAfford(p, cost);
+  }
+
+  _roomCost(p, count = 1) {
+    const base = {
+      wood: p.houseType === 'wood' ? 5 * count : 0,
+      clay: p.houseType === 'clay' ? 5 * count : 0,
+      stone: p.houseType === 'stone' ? 5 * count : 0,
+      reed: 2 * count,
+    };
+    return this.cards ? this.cards.getRoomCost(p, base, p.houseType, count) : base;
+  }
+
+  _canAfford(p, cost) {
+    return Object.entries(cost || {}).every(([k, v]) => (p.res[k] ?? 0) >= v);
+  }
+
+  _lessonCost(p, act) {
+    const table = act.lessonCost || [0, 1];
+    const idx = Math.min(p.occupations.length, table.length - 1);
+    return table[idx];
+  }
+
+  _canAffordCard(p, major) {
+    const cost = this.cards ? this.cards.getImprovementCost(p, major) : major.cost;
+    return this._canAfford(p, cost);
+  }
+
+  _canRenovate(p) {
+    const rooms = p.farm.filter(t => t === 1).length;
+    let base;
+    if (p.houseType === 'wood') base = { clay: rooms, reed: rooms };
+    else if (p.houseType === 'clay') base = { stone: rooms, reed: rooms };
+    else return { ok: false };
+    const cost = this.cards ? this.cards.getRenovationCost(p, base) : base;
+    if (this._canAfford(p, cost)) {
+      return { ok: true, cost, next: p.houseType === 'wood' ? 'clay' : 'stone' };
+    }
+    return { ok: false };
+  }
+
+  _doRenovate(p) {
+    const r = this._canRenovate(p);
+    if (!r.ok) return;
+    for (const [k, v] of Object.entries(r.cost)) {
+      if (v) p.res[k] -= v;
+    }
+    p.houseType = r.next;
+  }
+
+  _hasNeighbor(p, idx, type) {
+    const n = [];
+    if (idx >= 5) n.push(idx - 5);
+    if (idx < 10) n.push(idx + 5);
+    if (idx % 5 !== 0) n.push(idx - 1);
+    if (idx % 5 !== 4) n.push(idx + 1);
+    return n.some(x => p.farm[x] === type);
+  }
+
+  _findPlowTile(p) {
+    const hasField = p.farm.includes(2);
+    for (let i = 0; i < 15; i++) {
+      if (p.farm[i] === 0 && (!hasField || this._hasNeighbor(p, i, 2))) return i;
+    }
+    return -1;
+  }
+
+  _findRoomTile(p) {
+    for (let i = 0; i < 15; i++) {
+      if (p.farm[i] === 0 && this._hasNeighbor(p, i, 1)) return i;
+    }
+    return -1;
+  }
+
+  _findStableTile(p) {
+    for (let i = 0; i < 15; i++) {
+      if (p.farm[i] === 0) return i;
+    }
+    return -1;
+  }
+
+  _sowOnTile(p, idx) {
+    // Veg is strictly better than grain in this economy (cooks to 2-3 food with
+    // a cooker vs grain's 1:1, and scores more at endgame). Sow veg first.
+    if (p.res.veg > 0) {
+      p.res.veg--;
+      p.farmContent[idx] = 'veg';
+      p.farmCounts[idx] = 2;
+    } else if (p.res.grain > 0) {
+      p.res.grain--;
+      p.farmContent[idx] = 'grain';
+      p.farmCounts[idx] = 3;
+    }
+  }
+
+  _autoSow(p) {
+    for (let i = 0; i < 15; i++) {
+      if (p.farm[i] === 2 && p.farmContent[i] === null) {
+        if (p.res.veg > 0) {
+          p.res.veg--;
+          p.farmContent[i] = 'veg';
+          p.farmCounts[i] = 2;
+        } else if (p.res.grain > 0) {
+          p.res.grain--;
+          p.farmContent[i] = 'grain';
+          p.farmCounts[i] = 3;
+        }
+      }
+    }
+  }
+
+  _autoBuild(p, choices) {
+    const wantRoom = choices.buildRooms !== false;
+    const wantStable = choices.buildStables !== false;
+
+    if (wantRoom && this._canBuildRoom(p)) {
+      const idx = choices.tileIdx ?? this._findRoomTile(p);
+      if (idx >= 0) {
+        this._buildRoomAuto(p, idx);
+        return;
+      }
+    }
+    if (wantStable && p.stablesCount < 4) {
+      const nth = p.stablesCount + 1;
+      const sc = this.cards ? this.cards.getStableCost(p, nth) : { wood: 2 };
+      if (p.res.wood >= sc.wood) {
+        const idx = choices.stableIdx ?? this._findStableTile(p);
+        if (idx >= 0) {
+          p.res.wood -= sc.wood;
+          p.farm[idx] = 5;
+          p.stablesCount++;
+        }
+      }
+    }
+  }
+
+  _buildRoomAuto(p, idx) {
+    const cost = this._roomCost(p, 1);
+    for (const [k, v] of Object.entries(cost)) {
+      if (v) p.res[k] -= v;
+    }
+    p.farm[idx ?? this._findRoomTile(p)] = 1;
+  }
+
+  _autoFence(p, choices) {
+    if (!choices.fences) return;
+    const freeSegs = this.cards ? this.cards.getFenceFreeSegments(p) : new Set();
+    const canUseClay = this.cards && this.cards.getFenceCanUseClay(p);
+    let budgetWood = p.res.wood;
+    let budgetClay = canUseClay ? p.res.clay : 0;
+    let count = Math.min(choices.fences, LIMIT_FENCES - p.fences.size);
+    for (let i = 0; i < count; i++) {
+      const segNum = p.fences.size + 1;
+      if (freeSegs.has(segNum)) {
+        p.fences.add(`auto-${p.fences.size}`);
+        continue;
+      }
+      if (budgetWood > 0) {
+        budgetWood--;
+        p.fences.add(`auto-${p.fences.size}`);
+      } else if (budgetClay > 0) {
+        budgetClay--;
+        p.fences.add(`auto-${p.fences.size}`);
+      } else {
+        break;
+      }
+    }
+    p.res.wood = budgetWood;
+    if (canUseClay) p.res.clay = budgetClay;
+    this._maybePlacePastureTiles(p);
+  }
+
+  _maybePlacePastureTiles(p) {
+    const pastureTiles = Math.floor(p.fences.size / 4);
+    let placed = p.farm.filter(t => t === 3).length;
+    while (placed < pastureTiles) {
+      const idx = this._findStableTile(p);
+      if (idx < 0) break;
+      p.farm[idx] = 3;
+      placed++;
+    }
+  }
+
+  _pickPlayableMinor(p) {
+    if (!p.minorHand || p.minorHand.length === 0) return null;
+    const playable = p.minorHand
+      .filter(c => this.cards.prereqOk(p, c) && this._canAfford(p, c.cost))
+      .sort((a, b) => (b.vp || 0) - (a.vp || 0));
+    return playable[0] || null;
+  }
+
+  _pickBestMajor(p) {
+    const affordable = this.state.majorMarket
+      .filter(m => this._canAffordCard(p, m))
+      .sort((a, b) => {
+        const va = (a.score || 0) + (a.special ? 1 : 0);
+        const vb = (b.score || 0) + (b.special ? 1 : 0);
+        return vb - va;
+      });
+    return affordable[0] || null;
+  }
+
+  _buyMajor(p, majorId) {
+    const idx = this.state.majorMarket.findIndex(m => m.id === majorId);
+    if (idx < 0) return;
+    const m = this.state.majorMarket[idx];
+    const cost = this.cards ? this.cards.getImprovementCost(p, m) : m.cost;
+    if (!this._canAfford(p, cost)) return;
+    for (const [k, v] of Object.entries(cost)) p.res[k] -= v;
+    p.majors.push(m);
+    if (m.special === 'well') {
+      m.wellStartRound = this.state.round;
+    }
+    this.state.majorMarket.splice(idx, 1);
+    this.events.emit('buyMajor', { player: p, major: m });
+  }
+
+  // ======================== Scoring ========================
+
+  _tierScore(category, count) {
+    const tiers = SCORING_TIERS[category];
+    if (!tiers) return 0;
+    if (count >= tiers.length) return tiers[tiers.length - 1];
+    return tiers[count];
+  }
+
+  calculateScore(p) {
+    let s = 0;
+    s += this._tierScore('fields', p.farm.filter(t => t === 2).length);
+    s += this._tierScore('pastures', Math.floor(p.fences.size / 4));
+    s += this._tierScore('grain', p.res.grain);
+    s += this._tierScore('veg', p.res.veg);
+    s += this._tierScore('sheep', p.animals.sheep);
+    s += this._tierScore('boar', p.animals.boar);
+    s += this._tierScore('cow', p.animals.cow);
+
+    const occupied = p.farm.filter(t => t !== 0).length;
+    s -= (15 - occupied);
+
+    s += p.stablesCount;
+    const rooms = p.farm.filter(t => t === 1).length;
+    const houseVal = p.houseType === 'wood' ? 0 : (p.houseType === 'clay' ? 1 : 2);
+    s += rooms * houseVal;
+    s += p.res.maxWorkers * 3;
+    p.majors.forEach(m => { s += m.score || 0; });
+    // Minor improvements with vp
+    for (const id of p.minorImprovements) {
+      const c = getCard(id);
+      if (c && c.vp) s += c.vp;
+    }
+    s += p.begging * -3;
+    if (this.cards) s += this.cards.scoreCardBonuses(p);
+    return s;
+  }
+
+  _endGame() {
+    this.state.phase = 'ended';
+    this.state.players.forEach(p => { p.score = this.calculateScore(p); });
+    this.state.players.sort((a, b) => b.score - a.score);
+    this.events.emit('gameEnd', this.state.players);
+  }
+
+  // ======================== Simulation Helper ========================
+
+  /**
+   * Fast-forward a full game using a given policy function.
+   * Useful for AI training / evaluation.
+   *
+   * @param {function} chooseAction - (engine, actions) => action
+   * @returns {object} final scores
+   */
+  static playOut(chooseAction, numPlayers = 4) {
+    const engine = new GameEngine(numPlayers);
+    engine.init();
+    while (!engine.isGameOver) {
+      const actions = engine.getActions();
+      if (actions.length === 0) {
+        // Should not happen, but safety
+        engine.state.turnIdx++;
+        continue;
+      }
+      const action = chooseAction(engine, actions);
+      engine.applyAction(action);
+    }
+    return engine.state.players;
+  }
+}
+
+
+// ===== js/ai/heuristic-ai.js =====
+/**
+ * HeuristicAI - Evaluation + staged rollout policy for Agricola.
+ *
+ * Key insight: worker count is the dominant multiplier (each worker gives
+ * ~1 extra action per remaining round). Rooms and building resources are
+ * valued by their ability to UNLOCK growth, not as raw stock.
+ */
+
+
+const HEUR_HARVEST_ROUNDS = [4, 7, 9, 11, 13, 14];
+const HEUR_MAX_ROUNDS = 14;
+
+// Cost of a new room by house type
+function roomCost(houseType) {
+  if (houseType === 'wood') return { wood: 5, reed: 2 };
+  if (houseType === 'clay') return { clay: 5, reed: 2 };
+  return { stone: 5, reed: 2 };
+}
+
+// Cost to renovate (per existing room)
+function renoCost(houseType, rooms) {
+  if (houseType === 'wood') return { clay: rooms, reed: rooms };
+  if (houseType === 'clay') return { stone: rooms, reed: rooms };
+  return null;
+}
+
+function canAfford(p, cost) {
+  return Object.entries(cost).every(([k, v]) => (p.res[k] || 0) >= v);
+}
+
+/**
+ * Fraction (0..1) of the way to affording `cost`.
+ * Returns 1 if already affordable.
+ */
+function affordFraction(p, cost) {
+  let need = 0, have = 0;
+  for (const [k, v] of Object.entries(cost)) {
+    need += v;
+    have += Math.min(v, p.res[k] || 0);
+  }
+  return need === 0 ? 1 : have / need;
+}
+
+/**
+ * Evaluate a state from the perspective of player `pId`.
+ * Higher is better. Scale roughly 0..100 during game, x100 at terminal.
+ */
+function evaluateState(engine, pId) {
+  const p = engine.state.players[pId];
+  const round = engine.state.round;
+  const roundsLeft = Math.max(0, HEUR_MAX_ROUNDS - round + 1);
+  let score = 0;
+
+  const rooms = p.farm.filter(t => t === 1).length;
+  const fields = p.farm.filter(t => t === 2).length;
+  const workers = p.res.maxWorkers;
+  const emptyRooms = rooms - workers; // capacity for new children
+
+  // ===== Workers: the dominant multiplier =====
+  // Per the beginner guide: target is 3 workers (5 wood + 2 reed → 3-room house
+  // → grow to 3). 2→3 is huge; 3→4 solid; 4→5 win-more.
+  if (workers >= 3) score += roundsLeft * 1.5;
+  if (workers >= 4) score += roundsLeft * 1.0;
+  if (workers >= 5) score += roundsLeft * 0.5;
+
+  // Empty rooms are almost as good as workers (growth is imminent).
+  score += Math.min(1, emptyRooms) * roundsLeft * 1.0;
+  if (emptyRooms > 1) score += (emptyRooms - 1) * roundsLeft * 0.3;
+
+  // Build-readiness: if worker-capped and close to affording the NEXT room.
+  // Target 3 workers first; only push for 4th if game is past R7; 5th past R10.
+  const wantMoreRooms = workers < 3 || (workers < 4 && round >= 7) || (workers < 5 && round >= 10);
+  if (emptyRooms === 0 && wantMoreRooms) {
+    const cost = roomCost(p.houseType);
+    const frac = affordFraction(p, cost);
+    // Early spike for 3-worker push: coefficient much higher R1-6.
+    const spike = (workers === 2 && round <= 6) ? 4.5 : 2.5;
+    score += frac * roundsLeft * spike;
+    // Small base signal even when frac==0 so the AI starts accumulating.
+    score += (1 - frac) * roundsLeft * 0.4;
+  }
+
+  // ===== Food security near harvest =====
+  const nextHarvest = HEUR_HARVEST_ROUNDS.find(r => r >= round);
+  const roundsToHarvest = nextHarvest ? nextHarvest - round : 99;
+  const foodNeeded = workers * 2;
+  if (roundsToHarvest <= 1) {
+    const foodDeficit = Math.max(0, foodNeeded - p.res.food);
+    score -= foodDeficit * 15; // begging card = -3 + losing animals/crops, brutal
+  } else if (roundsToHarvest <= 3) {
+    const foodDeficit = Math.max(0, foodNeeded - p.res.food);
+    score -= foodDeficit * 5;
+  } else if (roundsToHarvest <= 5) {
+    // Medium-term: should be roughly on track
+    const foodDeficit = Math.max(0, foodNeeded / 2 - p.res.food);
+    score -= foodDeficit * 2;
+  }
+  // Food in the bank has modest value (diminishing)
+  score += Math.min(p.res.food, foodNeeded + 4) * 0.5;
+
+  // ===== Resource valuation =====
+  // Build resources have low base value; most of their value comes from
+  // build-readiness above. Wood is ranked highest among build resources
+  // because it builds BOTH rooms AND fences; clay mainly renovates/cooks;
+  // reed is scarce (needed for every build and reno); stone is late-game.
+  score += p.res.wood * 0.35;
+  score += p.res.clay * 0.2;
+  score += p.res.reed * 0.4;
+  score += p.res.stone * 0.4;
+
+  // Reno readiness: if wood/clay house and close to affording reno, value it
+  const rc = renoCost(p.houseType, rooms);
+  if (rc) {
+    const frac = affordFraction(p, rc);
+    // Reno is worth a few points per room at endgame
+    score += frac * rooms * 1.5;
+  }
+
+  // Well readiness: well costs 3 stone + 1 wood, gives 4 pts + 1 food at start
+  // of each of the next 5 rounds (5 food total). Per guide: "井，给5食物。
+  // 有4分，分数性价比超高！"
+  const hasWell = p.majors.some(m => m.special === 'well');
+  if (hasWell) {
+    const well = p.majors.find(m => m.special === 'well');
+    const roundsSince = well.wellStartRound != null ? round - well.wellStartRound : 5;
+    const foodRemaining = Math.max(0, 5 - Math.max(0, roundsSince));
+    score += 4 + foodRemaining * 0.8;
+  } else if (round >= 4) {
+    // Only start valuing well materials from R4 onward (stone isn't an R1-3
+    // priority per the guide).
+    const wellCost = { stone: 3, wood: 1 };
+    const frac = affordFraction(p, wellCost);
+    const wellValue = 4 + Math.min(5, roundsLeft) * 0.8;
+    score += frac * wellValue * 0.8;
+    score += (1 - frac) * 1.0; // mild signal to accumulate stone
+  }
+
+  // Cooker readiness: without a cook/bake major, animals can't be turned into
+  // food at harvest. Cheapest cooker is 2 clay.
+  const hasCooker = p.majors.some(m => m.type === 'cook' || m.type === 'bake');
+  if (!hasCooker) {
+    const cookerCost = { clay: 2 };
+    const frac = affordFraction(p, cookerCost);
+    // Cooker becomes critical by R5-6 (sheep arrive). Give a base "need clay"
+    // signal even when frac==0 so the AI accumulates clay, plus a big spike
+    // when we're close (1 clay) or can buy it (frac==1).
+    const cookerUrgency = round >= 5 ? 1.5 : (round >= 3 ? 0.8 : 0.3);
+    score += frac * 4 * cookerUrgency;
+    score += (1 - frac) * 1.5 * cookerUrgency;
+  } else {
+    // Cooker owned: solid food engine.
+    score += 3;
+  }
+
+  // Food/resources that score directly.
+  // Per guide: unplanted grain/veg are weak resources, but with a baker grain
+  // is a food engine (1 grain → bakeRate food), so value it higher then.
+  const baker = p.majors.find(m => m.bakeRate || m.specialBake);
+  const grainFood = baker ? (baker.specialBake ? baker.specialBake.out / baker.specialBake.in : baker.bakeRate) : 1;
+  score += p.res.grain * Math.max(0.5, grainFood * 0.8);
+  score += p.res.veg * 1.0;
+  score += p.animals.sheep * 1.5;
+  score += p.animals.boar * 2.0;
+  score += p.animals.cow * 3.0;
+
+  // ===== Farm development =====
+  // Fields: 5 fields = 4 endgame pts, plus sown crops generate food/grain/veg.
+  score += fields * 3.5;
+  if (fields >= 2) score += 2;
+  if (fields >= 4) score += 3;
+  if (fields >= 5) score += 2;
+
+  score += p.stablesCount * 2.5;
+
+  // Sown crops: veg cooks to 2-3 food and scores higher; grain is 1:1. Value
+  // by remaining harvests.
+  const sownGrain = p.farmContent ? p.farmContent.filter(c => c === 'grain').length : 0;
+  const sownVeg = p.farmContent ? p.farmContent.filter(c => c === 'veg').length : 0;
+  const harvestsLeft = HEUR_HARVEST_ROUNDS.filter(r => r >= round).length;
+  score += sownGrain * (1 + harvestsLeft * 0.4);
+  score += sownVeg * (2 + harvestsLeft * 1.0);
+
+  // Unused-farm-space penalty. Endgame scoring is -(15 - occupied), so empty
+  // tiles are a brutal late-game drain. Ramp the pressure up earlier and
+  // harder so the AI fills the farm from R8 onward.
+  const occupied = p.farm.filter(t => t !== 0).length;
+  const emptyTiles = 15 - occupied;
+  const fillUrgency = Math.max(0, 1 - roundsLeft / 12);
+  score -= emptyTiles * fillUrgency * 3.0;
+  // Pastures (each 4 fences ≈ 1 pasture, worth up to ~4 endgame points)
+  const pastureTiles = Math.floor(p.fences.size / 4);
+  score += pastureTiles * 2.0;
+  // If we hold animals but lack capacity, wood-for-fences is more valuable
+  const totalAnimals = p.animals.sheep + p.animals.boar + p.animals.cow;
+  const animalCapacity = pastureTiles * 2 + p.stablesCount * 2 + 1;
+  if (totalAnimals >= animalCapacity && p.res.wood < 4) {
+    score += (4 - p.res.wood) * 0.3;
+  }
+
+  // Endgame diversity bonus: at least 1 of each animal/crop = baseline points.
+  // Per guide: "羊、猪、牛、麦、菜 至少都要 1 个，拿保底分".
+  if (roundsLeft <= 4) {
+    if (p.animals.sheep >= 1) score += 1;
+    if (p.animals.boar >= 1) score += 1.5;
+    if (p.animals.cow >= 1) score += 2;
+    if (p.res.grain >= 1) score += 1;
+    if (p.res.veg >= 1) score += 1.5;
+  }
+
+  // House type
+  if (p.houseType === 'clay') score += 3;
+  if (p.houseType === 'stone') score += 8;
+
+  // Majors (cook improvement especially)
+  score += p.majors.length * 1.5;
+  score += p.majors.reduce((s, m) => s + (m.score || 0), 0);
+
+  // Begging
+  score -= p.begging * 8;
+
+  // Terminal: use actual score
+  if (engine.state.phase === 'ended') {
+    return engine.calculateScore(p) * 100;
+  }
+
+  return score;
+}
+
+/**
+ * Greedy AI: pick the action that gives the best immediate evaluation.
+ */
+function greedyPolicy(engine, actions) {
+  const pId = engine.currentPlayer.id;
+  const candidates = filterNoopActions(engine, pruneDominatedActions(actions));
+  let bestAction = candidates[0];
+  let bestScore = -Infinity;
+
+  for (const raw of candidates) {
+    const action = resolveActionChoices(engine, raw);
+    const simEngine = cloneEngineForSimulation(engine);
+    try {
+      simEngine.applyAction(action);
+      const score = evaluateState(simEngine, pId);
+      if (score > bestScore) {
+        bestScore = score;
+        bestAction = action;
+      }
+    } catch (e) {
+      // skip
+    }
+  }
+  return bestAction;
+}
+
+/**
+ * For actions with ambiguous outcomes (build_menu = build room OR stable,
+ * major = pick which major), attach explicit choices so sim outcomes are
+ * deterministic and AI doesn't accidentally build a stable when it wanted
+ * a room (or vice versa).
+ */
+function resolveActionChoices(engine, action) {
+  if (action.mode === 'build_menu' && !action.choices) {
+    const p = engine.currentPlayer;
+    const canRoom = engine._canBuildRoom(p);
+    if (canRoom) return { ...action, choices: { buildRooms: true, buildStables: false } };
+    return { ...action, choices: { buildRooms: false, buildStables: false } };
+  }
+  if (action.mode === 'major' && !action.choices) {
+    const p = engine.currentPlayer;
+    // A real cooker (m1-m4, has a `cook` table) is the food engine. If we
+    // don't own one yet, prefer the cheapest cooker over the highest-score
+    // major (bake ovens m9/m10 and well don't cook animals/veg in headless).
+    const hasCooker = p.majors.some(m => m.cook);
+    let pick = null;
+    if (!hasCooker) {
+      pick = engine.state.majorMarket
+        .filter(m => m.cook && engine._canAfford(p, m.cost))
+        .sort((a, b) => (a.cost.clay || 0) - (b.cost.clay || 0))[0];
+    }
+    if (!pick) pick = engine._pickBestMajor(p);
+    if (pick) return { ...action, choices: { majorId: pick.id } };
+  }
+  // Fence: default to spending up to 4 wood (1 pasture) if affordable.
+  if (action.mode === 'fence' && !action.choices) {
+    const p = engine.currentPlayer;
+    const wood = Math.min(4, p.res.wood, 15 - p.fences.size);
+    return { ...action, choices: { fences: wood } };
+  }
+  return action;
+}
+
+/**
+ * Random policy - baseline.
+ */
+function randomPolicy(engine, actions) {
+  return actions[Math.floor(Math.random() * actions.length)];
+}
+
+/**
+ * Staged rollout policy: priority-ordered strategy that knows the
+ * "build room -> grow -> plow/sow -> diversify" rhythm of Agricola.
+ * Adds a small amount of noise so rollouts stay stochastic.
+ */
+function stagedRolloutPolicy(engine, actions) {
+  const pId = engine.currentPlayer.id;
+  const p = engine.state.players[pId];
+  const round = engine.state.round;
+  actions = filterNoopActions(engine, pruneDominatedActions(actions)).map(a => resolveActionChoices(engine, a));
+
+  // Small epsilon noise keeps MCTS rollouts stochastic so it can average out
+  // variance and distinguish robust moves (deterministic rollouts collapse
+  // MCTS to 1-ply greedy).
+  if (actions.length > 1 && Math.random() < 0.15) {
+    return actions[Math.floor(Math.random() * actions.length)];
+  }
+
+  const rooms = p.farm.filter(t => t === 1).length;
+  const fields = p.farm.filter(t => t === 2).length;
+  const workers = p.res.maxWorkers;
+  const emptyRooms = rooms - workers;
+
+  const byId = id => actions.find(a => a.id === id);
+  const byMode = mode => actions.find(a => a.mode === mode);
+  const hasWell = p.majors.some(m => m.special === 'well');
+  const hasCook = p.majors.some(m => m.cook); // only real cookers (m1-m4)
+
+  // 1) Grow: workers are the dominant multiplier (more actions → more of
+  //    everything). But each worker costs 2 food/harvest, so we only grow once
+  //    a food engine (cooker + animals/veg) is producing. 2→3 is the opening
+  //    spike; 4th/5th need a real food engine or a large food bank.
+  if (emptyRooms > 0 && workers < 5) {
+    const nextNeed = (workers + 1) * 2;
+    const totalAnimals = p.animals.sheep + p.animals.boar + p.animals.cow;
+    const sownCrops = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
+    const foodEngine = hasCook && (totalAnimals >= 2 || sownCrops >= 1);
+    let foodOk;
+    if (workers === 2) foodOk = round <= 7;              // opening 3rd worker
+    else if (workers === 3) foodOk = foodEngine || p.res.food >= nextNeed + 4; // 4th
+    else foodOk = foodEngine && (totalAnimals >= 3 || sownCrops >= 2 ||
+      p.res.food >= nextNeed + 4);                        // 5th
+    if (foodOk) {
+      const grow = byMode('grow') || byMode('grow_force');
+      if (grow) return grow;
+    }
+  }
+  // Forced growth (hasty, no room): late game only, with a food buffer.
+  if (round >= 11 && workers < 5 && emptyRooms === 0) {
+    const forceGrow = byMode('grow_force');
+    if (forceGrow && p.res.food >= (workers + 1) * 2) return forceGrow;
+  }
+
+  // 2) Food emergency: begging cards are -3 each. If next harvest is close
+  //    and we can't feed, grab food now.
+  const nextHarvest = HEUR_HARVEST_ROUNDS.find(r => r >= round);
+  const roundsToHarvest = nextHarvest ? nextHarvest - round : 99;
+  const foodNeeded = workers * 2;
+  if (roundsToHarvest <= 2 && p.res.food < foodNeeded) {
+    const foodAction = bestFoodAction(engine, actions);
+    if (foodAction) return foodAction;
+  }
+
+  // 3) Build a room when affordable and we can still grow. Don't over-invest
+  //    in rooms (wood/reed) until a food engine is producing, or we starve.
+  const totalAnimalsPre = p.animals.sheep + p.animals.boar + p.animals.cow;
+  const sownCropsPre = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
+  const foodEnginePre = hasCook && (totalAnimalsPre >= 2 || sownCropsPre >= 1);
+  const wantBuild = (workers < 3) ||
+    (workers < 4 && foodEnginePre) ||
+    (workers < 5 && foodEnginePre && (totalAnimalsPre >= 3 || sownCropsPre >= 2));
+  if (emptyRooms === 0 && wantBuild) {
+    const cost = roomCost(p.houseType);
+    if (canAfford(p, cost)) {
+      const build = byMode('build_menu');
+      if (build) return { ...build, choices: { buildRooms: true, buildStables: false } };
+    }
+
+    // Gather missing materials. R1-3: take resource market first (covers reed
+    // + stone + food per guide). Then target scarcest resource.
+    if (round <= 3) {
+      const market = actions.find(a => a.type === 'res_combo');
+      if (market) return market;
+    }
+    if (round <= 11) {
+      let scarcest = null, scarcity = 0;
+      for (const [res, need] of Object.entries(cost)) {
+        const have = p.res[res] || 0;
+        const short = need - have;
+        if (short > 0) {
+          const weight = res === 'reed' ? short * 2.5 : short;
+          if (weight > scarcity) { scarcity = weight; scarcest = res; }
+        }
+      }
+      if (scarcest) {
+        if (scarcest === 'reed') {
+          const market = actions.find(a => a.type === 'res_combo');
+          if (market) return market;
+        }
+        const candidates = actions
+          .filter(a => a.type === 'res' && a.res === scarcest)
+          .map(a => ({ a, amount: a.amount || a.cur || a.acc || 1 }))
+          .sort((x, y) => y.amount - x.amount);
+        if (candidates.length > 0) return candidates[0].a;
+      }
+    }
+  }
+
+  // 3b) Buy cooker once 2 clay available AND room is built or materials secured.
+  if (!hasCook && p.res.clay >= 2 && (workers >= 3 || canAfford(p, roomCost(p.houseType)) || round >= 4)) {
+    const major = byMode('major');
+    if (major) return major;
+  }
+
+  // 3c) Gather clay for cooker if we already have most room materials (≥3 wood
+  //     or ≥1 reed), so we don't delay the first room.
+  if (!hasCook && p.res.clay < 2 && round >= 2 && round <= 6 &&
+      (p.res.wood >= 3 || p.res.reed >= 1)) {
+    const clayActs = actions.filter(a => a.type === 'res' && a.res === 'clay')
+      .sort((x, y) => (y.amount || 0) - (x.amount || 0));
+    if (clayActs.length > 0) return clayActs[0];
+  }
+
+  // 3d) Mid-game resource market still good (reed + stone + food bundle).
+  if (round <= 5) {
+    const market = actions.find(a => a.type === 'res_combo');
+    if (market) return market;
+  }
+
+  // 4) Sheep bulk grab is part of the food engine: with a cooker, 2 sheep = 4
+  //    food, 3 = 6. Grab as soon as 2+ pile up so we don't starve waiting.
+  const sheepAct = actions.find(a => a.res === 'sheep');
+  if (sheepAct && hasCook) {
+    const sheepAmt = sheepAct.amount || sheepAct.cur || 1;
+    if (sheepAmt >= 2) return sheepAct;
+  }
+
+  // 5) Plow: 2 fields early for baseline; 4-5 fields in mid/late game. Don't
+  //    over-plow before workers + food engine are secured.
+  if (fields < 2) {
+    const plow = byMode('plow_sow') || byId('act_plow') || byMode('plow');
+    if (plow) return plow;
+  }
+  if (workers >= 3 && fields < 5 && round >= 6) {
+    const plow = byMode('plow_sow') || byId('act_plow') || byMode('plow');
+    if (plow) return plow;
+  }
+
+  // 6) Fill farm tiles: stables (2 wood = +1 pt + 1 tile + 2 animal capacity)
+  //    and fences/pastures (4 wood = 1 pasture tile + animal capacity). Each
+  //    empty tile is -1 at endgame, so filling the farm is a top priority.
+  //    Gather wood explicitly here when short — after the room-building rush
+  //    the policy otherwise never regains wood for fences/stables.
+  if (round >= 5) {
+    const occupied = p.farm.filter(t => t !== 0).length;
+    const empty = 15 - occupied;
+    if (empty >= 2) {
+      if (p.res.wood < 2) {
+        const woodAct = actions.filter(a => a.type === 'res' && a.res === 'wood')
+          .sort((x, y) => (y.amount || 0) - (x.amount || 0))[0];
+        if (woodAct) return woodAct;
+      }
+      if (p.res.wood >= 2 && p.stablesCount < 4) {
+        const build = byMode('build_menu');
+        if (build) return { ...build, choices: { buildRooms: false, buildStables: true } };
+      }
+      if (p.res.wood >= 4 && p.fences.size < LIMIT_FENCES) {
+        const fence = byMode('fence');
+        if (fence) return { ...fence, choices: { fences: Math.min(4, p.res.wood) } };
+      }
+      if (fields < 5) {
+        const plow = byMode('plow_sow') || byId('act_plow') || byMode('plow');
+        if (plow) return plow;
+      }
+    }
+  }
+
+  // 7) Sow veg first (cooks to 2-3 food, scores higher), then grain (1:1).
+  const sownCount = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
+  const unsownFields = fields - sownCount;
+  if (unsownFields > 0 && (p.res.grain > 0 || p.res.veg > 0)) {
+    const sow = byMode('sow') || byMode('plow_sow');
+    if (sow) return sow;
+  }
+
+  // 7b) Acquire seeds if we have empty fields.
+  if (unsownFields > 0) {
+    if (p.res.veg === 0 && round >= 5) {
+      const vegAct = actions.find(a => a.res === 'veg' || a.mode === 'veg');
+      if (vegAct) return vegAct;
+    }
+    if (p.res.grain === 0 && round <= 8) {
+      const grainAct = actions.find(a => a.res === 'grain');
+      if (grainAct) return grainAct;
+    }
+  }
+
+  // 8) Animals for scoring, once we have capacity (pastures/stables). Sheep
+  //    first (cooks 2 food, breeds fastest), then boar/cow.
+  const capacity = p.stablesCount * 2 + Math.floor(p.fences.size / 4) * 2 + 1;
+  const held = p.animals.sheep + p.animals.boar + p.animals.cow;
+  if (held < capacity) {
+    for (const animal of ['sheep', 'boar', 'cow']) {
+      const act = actions.find(a => a.res === animal);
+      if (!act) continue;
+      const amt = act.amount || act.cur || 1;
+      if (amt >= 2 || round >= 9) return act;
+    }
+  }
+
+  // 9) Cooker / well majors + clay accumulation.
+  const major = byMode('major');
+  if (major) {
+    if (!hasCook && p.res.clay >= 2) return major;
+    if (!hasWell && p.res.stone >= 3 && p.res.wood >= 1) {
+      return { ...major, choices: { majorId: 'm5' } };
+    }
+  }
+  if (!hasCook && p.res.clay < 2 && round >= 3 && round <= 8) {
+    const clayActs = actions.filter(a => a.type === 'res' && a.res === 'clay')
+      .sort((x, y) => (y.amount || 0) - (x.amount || 0));
+    if (clayActs.length > 0) return clayActs[0];
+  }
+
+  // 10) Renovate: clay +1/room, stone +2/room. Only when spare reed exists
+  //    (reed is shared with room building, which is more important).
+  if (p.houseType === 'wood' && round >= 8) {
+    const rc = renoCost('wood', rooms);
+    if (canAfford(p, rc)) {
+      const reno = byMode('reno_major') || byMode('reno_fence');
+      if (reno) return reno;
+    }
+  }
+  if (p.houseType === 'clay' && round >= 11) {
+    const rc = renoCost('clay', rooms);
+    if (rc && canAfford(p, rc)) {
+      const reno = byMode('reno_major') || byMode('reno_fence');
+      if (reno) return reno;
+    }
+  }
+
+  // 11) Late-game diversity: grab 1 of each missing category (avoid -1 tiers).
+  if (round >= 10) {
+    const gaps = [];
+    if (p.animals.sheep < 1) gaps.push('sheep');
+    if (p.animals.boar < 1) gaps.push('boar');
+    if (p.animals.cow < 1) gaps.push('cow');
+    if (p.res.grain < 1) gaps.push('grain');
+    if (p.res.veg < 1) gaps.push('veg');
+    for (const g of gaps) {
+      const a = actions.find(x => x.res === g || x.mode === g);
+      if (a) return a;
+    }
+  }
+
+  // 12) Fallback: greedy.
+  return greedyPolicy(engine, actions);
+}
+
+function roundsInLateGame(round) {
+  return round >= 12;
+}
+
+function bestFoodAction(engine, actions) {
+  const p = engine.currentPlayer;
+  const cooker = p.majors.find(m => m.cook);
+  let best = null, bestGain = 0;
+  for (const a of actions) {
+    let gain = 0;
+    if (a.type === 'res' && a.res === 'food') gain = a.amount || a.cur || 1;
+    if (a.id === 'act_labor') gain = 2;
+    // With a cooker, animals and veg convert to (more) food, so they're a
+    // better emergency food source than raw 1-food actions.
+    if (cooker && a.type === 'res' && ['sheep', 'boar', 'cow'].includes(a.res)) {
+      gain = (a.amount || a.cur || 1) * (cooker.cook[a.res] || 1);
+    }
+    if (cooker && a.type === 'res' && a.res === 'veg') {
+      gain = (a.amount || a.cur || 1) * (cooker.cook.veg || 1);
+    }
+    if (gain > bestGain) { bestGain = gain; best = a; }
+  }
+  return best;
+}
+
+/**
+ * Create a lightweight engine clone for simulation.
+ */
+function cloneEngineForSimulation(engine) {
+  const sim = new GameEngine(engine.numPlayers);
+  sim.state = cloneState(engine.state);
+  sim._actionDefs = engine._actionDefs.map(a => ({ ...a }));
+  sim.state.roundCards = engine.state.roundCards.map(a => ({ ...a }));
+  sim.state.majorMarket = engine.state.majorMarket.map(m => ({ ...m }));
+  if (engine.cards) {
+        sim.cards = new CardEffectSystem(sim);
+  }
+  return sim;
+}
+
+/**
+ * Remove actions strictly dominated by another available action.
+ *
+ * For simple resource actions (type === 'res'), if two actions give the same
+ * resource, keep only the one with the highest current amount. This reflects
+ * the obvious "2 food > 1 food" / "3 wood > 2 wood > 1 wood" dominance.
+ *
+ * Note: accumulation means a lower-base action can sometimes out-scale a
+ * fixed one (e.g. fishing cur=3 > labor fixed=2), so we compare the LIVE
+ * `amount` field, not static definitions.
+ *
+ * All non-res actions (build, plow, sow, grow, majors, combos, etc.) are
+ * always retained.
+ */
+function pruneDominatedActions(actions) {
+  const bestByRes = new Map(); // res -> action with max amount
+
+  for (const a of actions) {
+    if (a.type === 'res' && a.res) {
+      const cur = bestByRes.get(a.res);
+      if (!cur || (a.amount || 0) > (cur.amount || 0)) {
+        bestByRes.set(a.res, a);
+      }
+    }
+  }
+
+  // The resource market (1 reed + 1 stone + 1 food) strictly dominates taking
+  // 1 reed alone, so never consider reed when the market is available.
+  const marketAvailable = actions.some(a => a.type === 'res_combo');
+
+  return actions.filter(a => {
+    if (a.type === 'res' && a.res) {
+      if (bestByRes.get(a.res) !== a) return false;
+      if (marketAvailable && a.res === 'reed') return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Filter out actions that are known no-ops for the current player (e.g.
+ * build_menu when room is unaffordable and we don't want a stable). Without
+ * this, MCTS wastes visits on actions that do nothing.
+ */
+function filterNoopActions(engine, actions) {
+  const p = engine.currentPlayer;
+  return actions.filter(a => {
+    if (a.mode === 'build_menu') {
+      if (engine._canBuildRoom(p)) return true;
+      if (engine.state.round >= 8 && p.res.wood >= 2 && p.stablesCount < 4) return true;
+      return false;
+    }
+    // Major action is a no-op if no major is affordable.
+    if (a.mode === 'major') {
+      return engine.state.majorMarket.some(m => engine._canAfford(p, m.cost));
+    }
+    // Reno_major requires being able to renovate.
+    if (a.mode === 'reno_major' || a.mode === 'reno_fence') {
+      if (p.houseType === 'stone') return false;
+      const rc = renoCost(p.houseType, p.farm.filter(t => t === 1).length);
+      return rc && canAfford(p, rc);
+    }
+    // Fence needs wood.
+    if (a.mode === 'fence' && p.res.wood < 1) return false;
+    // Plow requires empty field tile.
+    if (a.mode === 'plow' && !p.farm.some((t, i) => t === 0 &&
+        (!p.farm.some(x => x === 2) || engine._hasNeighbor(p, i, 2)))) return false;
+    return true;
+  });
+}
+
+
+// ===== js/ai/mcts.js =====
+/**
+ * MCTS - Monte Carlo Tree Search for Agricola.
+ *
+ * Each node represents a game state and edge = action taken.
+ * Multiplayer-aware: tracks whose turn, backprops winner score.
+ *
+ * Usage:
+ *   const ai = new MCTSAI({ iterations: 2000, exploration: 1.4 });
+ *   const action = ai.selectAction(engine);
+ */
+
+
+// ======================== Tree Node ========================
+
+let NODE_ID = 0;
+
+class MCTSNode {
+  constructor(engine, parent = null, actionFromParent = null) {
+    this.id = NODE_ID++;
+    this.parent = parent;
+    this.actionFromParent = actionFromParent;
+    this.children = [];
+    this.visits = 0;
+    this.value = 0; // cumulative score for the player who acted to reach this node
+    this.unexploredActions = null; // lazy-populated
+    this._engine = engine; // owned reference (cloned when expanding children)
+    this.playerId = engine.currentPlayer ? engine.currentPlayer.id : -1;
+    this.isTerminal = engine.isGameOver;
+  }
+
+  get ucb1() {
+    if (this.visits === 0) return Infinity;
+    const exploit = this.value / this.visits;
+    const explore = Math.sqrt(2 * Math.log(this.parent.visits) / this.visits);
+    return exploit + explore * 1.4;
+  }
+
+  ucb1With(c) {
+    if (this.visits === 0) return Infinity;
+    const exploit = this.value / this.visits;
+    const explore = Math.sqrt(c * Math.log(this.parent.visits) / this.visits);
+    return exploit + explore;
+  }
+
+  get isFullyExpanded() {
+    return this.unexploredActions !== null && this.unexploredActions.length === 0;
+  }
+
+  get bestChild() {
+    let best = this.children[0];
+    for (const child of this.children) {
+      if (child.visits > best.visits) best = child;
+    }
+    return best;
+  }
+}
+
+// ======================== MCTS AI ========================
+
+class MCTSAI {
+  constructor(options = {}) {
+    this.iterations = options.iterations || 1000;
+    this.exploration = options.exploration ?? Math.SQRT2;
+    this.rolloutPolicy = options.rolloutPolicy || stagedRolloutPolicy;
+    // Opponents during rollout: default to greedy (matches the common arena
+    // setup MCTS-vs-greedy) so score estimates reflect realistic opponents.
+    this.opponentRolloutPolicy = options.opponentRolloutPolicy || greedyPolicy;
+    this.rolloutDepth = options.rolloutDepth || 0; // 0 = play to end
+    this.verbose = options.verbose || false;
+    this.playerId = options.playerId ?? 0;
+  }
+
+  /**
+   * Select the best action for the current player.
+   * Returns the action object (from engine.getActions()).
+   */
+  selectAction(engine) {
+    this.playerId = engine.currentPlayer.id;
+    const rootEngine = cloneEngineForSimulation(engine);
+    const root = new MCTSNode(rootEngine);
+    root.unexploredActions = filterNoopActions(rootEngine,
+      pruneDominatedActions(rootEngine.getActions()))
+      .map(a => resolveActionChoices(rootEngine, a));
+
+    if (root.unexploredActions.length === 0) return null;
+    if (root.unexploredActions.length === 1) return root.unexploredActions[0];
+
+    for (let i = 0; i < this.iterations; i++) {
+      const node = this._select(root);
+      const reward = this._simulate(node);
+      this._backpropagate(node, reward);
+    }
+
+    if (this.verbose) {
+      this._printStats(root);
+    }
+
+    const best = root.bestChild;
+    return best ? best.actionFromParent : root.unexploredActions[0];
+  }
+
+  // ======================== Phases ========================
+
+  _select(node) {
+    while (!node.isTerminal) {
+      if (!node.isFullyExpanded) {
+        return this._expand(node);
+      }
+      // Pick child by UCB1
+      let best = null;
+      let bestScore = -Infinity;
+      for (const child of node.children) {
+        const score = child.ucb1With(this.exploration);
+        if (score > bestScore) {
+          bestScore = score;
+          best = child;
+        }
+      }
+      node = best;
+    }
+    return node;
+  }
+
+  _expand(parent) {
+    if (parent.unexploredActions === null) {
+      parent.unexploredActions = filterNoopActions(parent._engine,
+        pruneDominatedActions(parent._engine.getActions()));
+    }
+    if (parent.unexploredActions.length === 0) return parent;
+
+    const action = resolveActionChoices(parent._engine, parent.unexploredActions.pop());
+    const childEngine = cloneEngineForSimulation(parent._engine);
+    try {
+      childEngine.applyAction(action);
+    } catch (e) {
+      // Action turned out invalid during sim, skip
+      return this._expand(parent);
+    }
+
+    const child = new MCTSNode(childEngine, parent, action);
+    if (!child.isTerminal) {
+      child.unexploredActions = pruneDominatedActions(childEngine.getActions());
+    }
+    parent.children.push(child);
+    return child;
+  }
+
+  _simulate(node) {
+    if (node.isTerminal) {
+      return this._getReward(node._engine);
+    }
+
+    const simEngine = cloneEngineForSimulation(node._engine);
+    let depth = 0;
+
+    while (!simEngine.isGameOver) {
+      if (this.rolloutDepth > 0 && depth >= this.rolloutDepth) {
+        return this._heuristicReward(simEngine);
+      }
+      const actions = simEngine.getActions();
+      if (actions.length === 0) {
+        // Safety: force advance
+        simEngine.state.turnIdx++;
+        depth++;
+        if (depth > 2000) break;
+        continue;
+      }
+      const policy = simEngine.currentPlayer.id === this.playerId
+        ? this.rolloutPolicy
+        : this.opponentRolloutPolicy;
+      const action = policy(simEngine, actions);
+      try {
+        simEngine.applyAction(action);
+      } catch (e) {
+        // skip invalid
+      }
+      depth++;
+    }
+
+    return this._getReward(simEngine);
+  }
+
+  _backpropagate(node, reward) {
+    let current = node;
+    while (current !== null) {
+      current.visits++;
+      // Reward is from root player's perspective
+      current.value += reward;
+      current = current.parent;
+    }
+  }
+
+  // ======================== Reward ========================
+
+  /**
+   * Terminal reward: blend of rank (win signal) and normalized score (absolute
+   * skill signal). Rank alone doesn't reward scoring 40 vs 10; score alone
+   * makes MCTS chase points at expense of winning. Blend both.
+   */
+  _getReward(engine) {
+    const players = engine.state.players;
+    const targetPlayer = players.find(p => p.id === this.playerId);
+    if (!targetPlayer) return 0;
+
+    const sorted = [...players].sort((a, b) => b.score - a.score);
+    const rank = sorted.findIndex(p => p.id === this.playerId);
+    const rankReward = 1 - rank / (sorted.length - 1);
+
+    // Normalized score: map score to roughly [0, 1] around 0..50
+    const scoreReward = 1 / (1 + Math.exp(-(targetPlayer.score - 20) / 15));
+
+    // 30% rank, 70% absolute score — heavily reward high scores so MCTS seeks
+    // 40+ point games, not just beating weak opponents.
+    return rankReward * 0.3 + scoreReward * 0.7;
+  }
+
+  /**
+   * Non-terminal reward using heuristic evaluation.
+   */
+  _heuristicReward(engine) {
+    const rawScore = evaluateState(engine, this.playerId);
+    // Sigmoid-like normalization into [0, 1]
+    return 1 / (1 + Math.exp(-rawScore / 30));
+  }
+
+  // ======================== Debug ========================
+
+  _printStats(root) {
+    const sorted = [...root.children].sort((a, b) => b.visits - a.visits);
+    console.log(`\nMCTS Stats (${this.iterations} iterations, player ${this.playerId}):`);
+    for (const child of sorted.slice(0, 8)) {
+      const winRate = (child.value / child.visits * 100).toFixed(1);
+      const actionLabel = child.actionFromParent.label || child.actionFromParent.id;
+      console.log(`  ${actionLabel.padEnd(30)} visits=${String(child.visits).padStart(5)}  winRate=${winRate}%`);
+    }
+  }
+}
+
+// ======================== Policy wrapper ========================
+
+/**
+ * Create an MCTS policy function compatible with GameEngine.playOut().
+ * Each call runs MCTS for the configured iterations.
+ */
+function createMCTSPolicy(options = {}) {
+  const ai = new MCTSAI(options);
+  return (engine, actions) => ai.selectAction(engine);
+}
+
+
+  global.Agricola = {
+    GameEngine,
+    EventEmitter,
+    createInitialState,
+    createPlayer,
+    cloneState,
+    evaluateState,
+    greedyPolicy,
+    randomPolicy,
+    stagedRolloutPolicy,
+    pruneDominatedActions,
+    MCTSAI,
+    MCTSNode,
+    createMCTSPolicy,
+    cloneEngineForSimulation,
+    CardEffectSystem,
+    dealOpeningHands,
+    getCard,
+    CARDS_BY_ID,
+    OCCUPATIONS,
+    MINORS,
+    ALL_CARDS,
+    // constants
+    LIMIT_FENCES,
+    LIMIT_STABLES,
+    MAX_ROUNDS,
+    HARVEST_ROUNDS,
+    SCORING_TIERS,
+    DB_MAJORS,
+    BASE_ACTIONS,
+    ROUND_CARDS_POOL,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

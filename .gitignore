@@ -1,0 +1,13 @@
+# Reference BGA implementation (not our code)
+bga-agricola-main_Q/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if we add package.json later)
+node_modules/
+
+# Generated data is committed (extracted from BGA reference)
+
+*.pdf
