@@ -73,7 +73,7 @@ const ROUND_CARDS_POOL = [
     { id:'r_cow', name:'🐮 牛 (1牛)', acc:1, cur:1, type:'res', res:'cow', stage:4 },
     { id:'r_stone2', name:'🪨 东部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:4 },
     { id:'r_plow_sow', name:'🚜 犁地+播种', type:'special', mode:'plow_sow', stage:5 },
-    { id:'r_grow2', name:'👶 急于求成', type:'special', mode:'grow_force', stage:5 },
+    { id:'r_grow2', name:'👶 求子心切', type:'special', mode:'grow_force', stage:5 },
     { id:'r_reno_fence', name:'🔨 翻修+栅栏', type:'special', mode:'reno_fence', stage:6 }
 ];
 
