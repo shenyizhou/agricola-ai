@@ -66,9 +66,12 @@ function evaluateState(engine, pId) {
   if (workers >= 4) score += roundsLeft * 1.0;
   if (workers >= 5) score += roundsLeft * 0.5;
 
-  // Empty rooms are almost as good as workers (growth is imminent).
-  score += Math.min(1, emptyRooms) * roundsLeft * 1.0;
-  if (emptyRooms > 1) score += (emptyRooms - 1) * roundsLeft * 0.3;
+  // Empty rooms are a worker "in waiting": one grow action away from a new
+  // worker. Value them slightly below a worker (1.5) but clearly ABOVE the
+  // "ready to build" state below, so the AI actually converts resources into
+  // rooms instead of hoarding them.
+  score += Math.min(1, emptyRooms) * roundsLeft * 1.3;
+  if (emptyRooms > 1) score += (emptyRooms - 1) * roundsLeft * 0.4;
 
   // Build-readiness: if worker-capped and close to affording the NEXT room.
   // Target 3 workers first; only push for 4th if game is past R7; 5th past R10.
@@ -76,8 +79,9 @@ function evaluateState(engine, pId) {
   if (emptyRooms === 0 && wantMoreRooms) {
     const cost = roomCost(p.houseType);
     const frac = affordFraction(p, cost);
-    // Early spike for 3-worker push: coefficient much higher R1-6.
-    const spike = (workers === 2 && round <= 6) ? 4.5 : 2.5;
+    // Readiness must be worth LESS than actually having the empty room (1.3),
+    // otherwise the AI hoards build materials and never builds.
+    const spike = (workers === 2 && round <= 6) ? 0.9 : 0.6;
     score += frac * roundsLeft * spike;
     // Small base signal even when frac==0 so the AI starts accumulating.
     score += (1 - frac) * roundsLeft * 0.4;
@@ -148,7 +152,9 @@ function evaluateState(engine, pId) {
     // signal even when frac==0 so the AI accumulates clay, plus a big spike
     // when we're close (1 clay) or can buy it (frac==1).
     const cookerUrgency = round >= 5 ? 1.5 : (round >= 3 ? 0.8 : 0.3);
-    score += frac * 4 * cookerUrgency;
+    // Readiness must be worth LESS than actually owning a cooker (~5.5 pts:
+    // 3 base + 1.5 major + 1 score), else the AI hoards clay and never buys one.
+    score += frac * 2 * cookerUrgency;
     score += (1 - frac) * 1.5 * cookerUrgency;
   } else {
     // Cooker owned: solid food engine.
@@ -337,7 +343,9 @@ function stagedRolloutPolicy(engine, actions) {
     const sownCrops = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
     const foodEngine = hasCook && (totalAnimals >= 2 || sownCrops >= 1);
     let foodOk;
-    if (workers === 2) foodOk = round <= 7;              // opening 3rd worker
+    // 3rd worker is the biggest multiplier in the game; grow it as soon as an
+    // empty room exists, then gate the 4th/5th on a real food engine.
+    if (workers === 2) foodOk = round <= 9 || p.res.food >= nextNeed + 2 || foodEngine;
     else if (workers === 3) foodOk = foodEngine || p.res.food >= nextNeed + 4; // 4th
     else foodOk = foodEngine && (totalAnimals >= 3 || sownCrops >= 2 ||
       p.res.food >= nextNeed + 4);                        // 5th
