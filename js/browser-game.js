@@ -206,6 +206,10 @@ class BrowserGame {
       case 'reno_major':
         this._showMajorMarket(act);
         return;
+      case 'lesson':
+      case 'lesson2':
+        this._showOccupationMarket(act);
+        return;
       case 'reno_fence':
         this.engine._doRenovate(p);
         this._executeHumanAction({ id: actionId, choices: { fences: Math.min(p.res.wood, 5) } });
@@ -437,6 +441,46 @@ class BrowserGame {
     this._executeHumanAction({ id: actionId });
   }
 
+  // ======================== Occupation (lesson) Modal ========================
+
+  _showOccupationMarket(act) {
+    const p = this.engine.currentPlayer;
+    this._occupationAct = act;
+    const modal = document.getElementById('modal');
+    document.getElementById('modal-title').innerText = '选择职业卡';
+    const body = document.getElementById('modal-body');
+    const footer = document.getElementById('modal-footer');
+
+    const foodCost = this.engine._lessonCost(p, act);
+    let html = `<div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px;">花费 ${foodCost} 食打出 1 张职业卡（从手牌 ${p.occupationHand.length} 张中选择）</div>`;
+    html += '<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px;">';
+    for (const c of p.occupationHand) {
+      html += `<div class="occ-card" onclick="game.playOccupationChoice('${c.id}')" title="${c.desc || ''}">
+        <b>${c.name}</b>
+        <div style="font-size:11px;color:#e2f0f7;margin-top:3px;">${c.desc || ''}</div>
+      </div>`;
+    }
+    html += '</div>';
+    html += '<div style="margin-top:14px;"><button class="btn btn-outline" onclick="game.cancelOccupation()">取消</button></div>';
+
+    body.innerHTML = html;
+    footer.style.display = 'none';
+    modal.style.display = 'flex';
+  }
+
+  playOccupationChoice(occId) {
+    this._closeModal();
+    const actionId = this._occupationAct.id;
+    this._occupationAct = null;
+    this._executeHumanAction({ id: actionId, choices: { occId } });
+  }
+
+  cancelOccupation() {
+    this._closeModal();
+    this._occupationAct = null;
+    this.onStateChange();
+  }
+
   _closeModal() {
     document.getElementById('modal').style.display = 'none';
   }
@@ -572,9 +616,27 @@ class BrowserGame {
       <div class="mini-card-container">
         ${p.majors.map(m => `<div class="mini-card major" title="${m.desc||''}">${m.name.substring(0,2)}</div>`).join('')}
       </div>
+      ${p.id === this.humanPlayerId ? this._renderHand(p) : ''}
       <div class="farm-wrapper">${this._renderFarmGrid(p)}</div>
     `;
     return div;
+  }
+
+  _renderHand(p) {
+    const occs = p.occupationHand || [];
+    const minors = p.minorHand || [];
+    let html = '';
+    if (occs.length > 0) {
+      html += `<div class="section-title">手牌 · 职业 (${occs.length})</div><div class="mini-card-container">`;
+      html += occs.map(c => `<div class="mini-card occ" title="${c.name}：${c.desc || ''}">${c.name.substring(0, 2)}</div>`).join('');
+      html += '</div>';
+    }
+    if (minors.length > 0) {
+      html += `<div class="section-title">手牌 · 次要改良 (${minors.length})</div><div class="mini-card-container">`;
+      html += minors.map(c => `<div class="mini-card minor" title="${c.name}：${c.desc || ''}">${c.name.substring(0, 2)}</div>`).join('');
+      html += '</div>';
+    }
+    return html;
   }
 
   _renderFarmGrid(p) {

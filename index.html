@@ -467,6 +467,8 @@
         }
         .mini-card:hover { transform: scale(1.2) rotate(-2deg); z-index: 10; box-shadow: 0 5px 12px rgba(74,48,20,0.4); }
         .mini-card.major { background: linear-gradient(180deg, #d06a48, var(--clay)); color: #fff; border-color: var(--clay-dark); }
+        .mini-card.occ { background: linear-gradient(180deg, #5a93b0, #3f7a97); color: #fff; border-color: #2f5f76; }
+        .mini-card.minor { background: linear-gradient(180deg, #f0c75e, #d9a52e); color: #3a2a10; border-color: #b8881a; }
 
         /* ======================== Modal ======================== */
 
@@ -529,6 +531,25 @@
         .major-card .cost-line { font-size: 12px; margin: 4px 0; font-weight: 600; }
         .major-card .missing { color: #ffd6c2; font-weight: 800; }
         .major-card b { font-family: "Noto Serif SC", serif; }
+
+        .occ-card {
+            border: 1px solid #2f5f76;
+            padding: 10px;
+            margin: 4px;
+            display: inline-block;
+            width: 100%;
+            background: linear-gradient(180deg, #5a93b0, #3f7a97);
+            border-radius: 10px;
+            vertical-align: top;
+            font-size: 12px;
+            box-shadow: 0 3px 8px rgba(74, 48, 20, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+            color: #fff;
+            text-align: left;
+        }
+        .occ-card:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(74, 48, 20, 0.4); border-color: var(--gold-light); }
+        .occ-card b { font-family: "Noto Serif SC", serif; }
 
         /* ======================== Log (ledger) ======================== */
 
