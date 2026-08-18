@@ -53,8 +53,8 @@ const BASE_ACTIONS = [
     { id:'act_labor', name:'👷 临时工 (2食)', type:'res', res:'food', amount:2 },
     { id:'act_grain', name:'🌾 小麦种子', type:'res', res:'grain', amount:1 },
     { id:'act_meeting', name:'👥 聚会场所', type:'special', mode:'meeting', desc:'成为下轮起始玩家，可打1张次要改良' },
-    { id:'act_lessons', name:'🎓 上课', type:'special', mode:'lesson', lessonCost:[0,1], desc:'花1食打1张职业（第一张免费）' },
-    { id:'act_lessons2', name:'🎓 夜校', type:'special', mode:'lesson2', lessonCost:[1,1,2], players:[4], desc:'花2食打1张职业（前两张仅1食）' },
+    { id:'act_lessons', name:'🎓 职业训练', type:'special', mode:'lesson', lessonCost:[0,1], desc:'花1食打1张职业（第一张免费）' },
+    { id:'act_lessons2', name:'🎓 职业训练', type:'special', mode:'lesson2', lessonCost:[1,1,2], players:[4], desc:'花2食打1张职业（前两张仅1食）' },
     { id:'act_market', name:'🛒 资源市场', type:'res_combo', desc:'1苇+1石+1食' },
     { id:'act_plow', name:'🚜 犁地', type:'special', mode:'plow' },
     { id:'act_build', name:'🏠 建房/马厩', type:'special', mode:'build_menu', desc:'自由建造房间/马厩' }

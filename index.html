@@ -38,7 +38,7 @@
             font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
             color: var(--ink);
             margin: 0;
-            padding: 18px 18px 160px;
+            padding: 18px;
             min-height: 100vh;
             user-select: none;
             overflow-x: hidden;
@@ -184,7 +184,7 @@
         /* ======================== Board ======================== */
 
         .board {
-            width: 780px;
+            width: 680px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -285,6 +285,14 @@
             font-weight: 800;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
+        .worker-token {
+            position: absolute;
+            top: 3px;
+            left: 4px;
+            z-index: 3;
+            display: flex;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45));
+        }
 
         .section-title {
             font-size: 12px;
@@ -304,7 +312,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            min-width: 520px;
+            min-width: 420px;
         }
         .player-panel {
             background: linear-gradient(180deg, #fdf8ec, #f0e4c8);
@@ -315,12 +323,7 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             position: relative;
             box-shadow: var(--shadow);
-            animation: riseIn 0.6s ease both;
         }
-        .player-panel:nth-child(1) { animation-delay: 0.08s; }
-        .player-panel:nth-child(2) { animation-delay: 0.16s; }
-        .player-panel:nth-child(3) { animation-delay: 0.24s; }
-        .player-panel:nth-child(4) { animation-delay: 0.32s; }
         .player-panel.active {
             border-left-color: var(--gold);
             border-color: var(--gold);
@@ -329,12 +332,16 @@
             z-index: 10;
         }
         .player-panel.active::before {
-            content: "●";
+            content: "";
             position: absolute;
-            top: 10px;
-            right: 12px;
-            color: var(--gold);
-            animation: pulseDot 1s ease infinite;
+            top: -8px;
+            right: 14px;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 8px solid var(--gold);
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
         }
 
         .player-head {
@@ -354,6 +361,20 @@
             font-weight: 700;
             font-size: 18px;
             color: var(--clay-dark);
+        }
+        .start-tag {
+            display: inline-block;
+            margin-left: 7px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(180deg, #e8b64a, #c8921a);
+            padding: 1px 8px;
+            border-radius: 999px;
+            border: 1px solid #a87514;
+            vertical-align: middle;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            letter-spacing: 0.5px;
         }
         .player-meta { font-size: 11px; color: var(--ink-soft); font-weight: 500; }
 
@@ -554,26 +575,24 @@
         /* ======================== Log (ledger) ======================== */
 
         #log {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            width: calc(100% - 36px);
-            max-width: 1480px;
-            height: 132px;
+            width: 240px;
+            flex: 0 0 240px;
+            position: sticky;
+            top: 18px;
+            align-self: flex-start;
+            max-height: calc(100vh - 36px);
             margin: 0;
             background: linear-gradient(180deg, #4a3018, #3a2410);
             color: #e8d9b8;
             font-family: "Noto Sans SC", monospace;
-            padding: 10px 16px;
+            padding: 12px 14px;
             overflow-y: auto;
-            border-radius: 14px 14px 0 0;
+            border-radius: 14px;
             font-size: 13px;
             line-height: 1.5;
             border: 1px solid #2c1a08;
-            border-bottom: none;
-            box-shadow: 0 -6px 20px rgba(74, 48, 20, 0.4), var(--shadow-inset);
+            box-shadow: var(--shadow-lg), var(--shadow-inset);
+            animation: riseIn 0.6s ease both;
         }
         #log::before {
             content: "对局记录 · LEDGER";
@@ -650,6 +669,7 @@
         @media (max-width: 1000px) {
             .board { width: 100%; }
             .players-area { min-width: 0; }
+            #log { width: 100%; flex-basis: 100%; position: static; max-height: 240px; }
         }
     </style>
 </head>
@@ -686,9 +706,11 @@
             <div id="central-board"></div>
             <div style="display:flex; gap:8px; justify-content:center;">
                 <button class="btn btn-wood" onclick="game.showMajorBrowser()">🏗️ 主要发展卡</button>
+                <button class="btn btn-wood" onclick="game.showHandBrowser()">🎴 职业/次要卡</button>
             </div>
         </div>
         <div class="players-area" id="players-container"></div>
+        <div id="log"></div>
     </div>
 
     <div class="modal-overlay" id="modal">
@@ -702,7 +724,6 @@
     </div>
 
     <div id="toast">提示</div>
-    <div id="log"></div>
 
     <script src="js/agricola-engine.bundle.js"></script>
     <script src="js/browser-game.js"></script>

@@ -14,7 +14,7 @@
 
 const { GameEngine, MCTSAI, MCTSNode, DB_MAJORS, BASE_ACTIONS, ROUND_CARDS_POOL,
         LIMIT_FENCES, LIMIT_STABLES, HARVEST_ROUNDS, MAX_ROUNDS, SCORING_TIERS,
-        randomPolicy, greedyPolicy, cloneEngineForSimulation } = global.Agricola;
+        randomPolicy, greedyPolicy, cloneEngineForSimulation, getCard } = global.Agricola;
 
 // 7-row, 6-column action board. Base actions occupy fixed cells; the 14 round
 // cards unlock one per round into fixed turn slots (some span 2 rows).
@@ -314,6 +314,51 @@ class BrowserGame {
   }
 
   /**
+   * Read-only modal showing the current player's occupation and minor
+   * improvement hands in full (name + description), complementing the
+   * abbreviated mini-cards in the player panel.
+   */
+  showHandBrowser() {
+    const p = this.engine.currentPlayer;
+    const modal = document.getElementById('modal');
+    document.getElementById('modal-title').innerText = '手牌 · 职业 & 次要改良';
+    const body = document.getElementById('modal-body');
+    const footer = document.getElementById('modal-footer');
+
+    const occs = p.occupationHand || [];
+    const minors = p.minorHand || [];
+
+    let html = `<div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px;">${p.name} 的手牌（只读查看）</div>`;
+
+    html += `<div class="section-title">职业卡 (${occs.length})</div>`;
+    if (occs.length === 0) {
+      html += '<div style="font-size:12px;color:var(--ink-soft);">无职业卡手牌</div>';
+    } else {
+      html += '<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px;">';
+      for (const c of occs) {
+        html += `<div class="occ-card" title="${c.desc || ''}"><b>${c.name}</b><div style="font-size:11px;color:#e2f0f7;margin-top:3px;">${c.desc || ''}</div></div>`;
+      }
+      html += '</div>';
+    }
+
+    html += `<div class="section-title" style="margin-top:14px;">次要改良 (${minors.length})</div>`;
+    if (minors.length === 0) {
+      html += '<div style="font-size:12px;color:var(--ink-soft);">无次要改良手牌</div>';
+    } else {
+      html += '<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px;">';
+      for (const c of minors) {
+        const cost = c.cost ? this._costLine(p, c.cost) : '免费';
+        html += `<div class="major-card" title="${c.desc || ''}"><b>${c.name}</b><div class="cost-line">${cost}</div>${c.vp ? `<div>${c.vp}分</div>` : ''}<div style="font-size:10px;color:#ffe0b2;margin-top:2px;">${c.desc || ''}</div></div>`;
+      }
+      html += '</div>';
+    }
+
+    body.innerHTML = html;
+    footer.style.display = 'block';
+    modal.style.display = 'flex';
+  }
+
+  /**
    * Modal opened after clicking the Major Improvement or Renovation+Major
    * action. Affordables are clickable to buy; unaffordables are grayed out.
    */
@@ -538,6 +583,13 @@ class BrowserGame {
     container.appendChild(d);
   }
 
+  _meepleIcon(color) {
+    return `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path d="M12 2.2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" fill="${color}"/>
+      <path d="M12 8.2c-3.4 0-5.6 2.1-5.6 4.8V20c0 1.1.9 2 2 2h7.2c1.1 0 2-.9 2-2v-7c0-2.7-2.2-4.8-5.6-4.8z" fill="${color}"/>
+    </svg>`;
+  }
+
   _renderActionTile(container, act, pos) {
     const d = document.createElement('div');
     d.className = 'action-tile';
@@ -555,7 +607,7 @@ class BrowserGame {
       const who = this.engine.state.players[occupied];
       const c = this._playerColor(who);
       d.style.borderColor = c;
-      d.innerHTML = `<div class="ico" style="opacity:0.5">${ico}</div><div style="color:${c};font-size:11px;font-weight:700;">${who.name}</div>`;
+      d.innerHTML = `<div class="worker-token">${this._meepleIcon(c)}</div><div class="ico" style="opacity:0.5">${ico}</div><div style="color:${c};font-size:11px;font-weight:700;">${who.name}</div>`;
     } else {
       d.onclick = () => this.handleActionClick(act.id);
       d.innerHTML = `<div class="ico">${ico}</div><div>${label}</div>`;
@@ -584,17 +636,18 @@ class BrowserGame {
     div.className = 'player-panel';
     div.id = `p-${p.id}`;
     if (this.engine.currentPlayer.id === p.id) div.classList.add('active');
-    if (this.engine.state.startPlayer === p.id) div.style.borderLeftColor = '#c8921a';
+    const isStart = this.engine.state.startPlayer === p.id;
 
     const score = this.engine.calculateScore(p);
     const rooms = p.farm.filter(t => t === 1).length;
     const fields = p.farm.filter(t => t === 2).length;
 
     const color = this._playerColor(p);
+    const startTag = isStart ? '<span class="start-tag">🚩 先手</span>' : '';
 
     div.innerHTML = `
       <div class="player-head">
-        <span class="player-name" style="color:${color};">${p.name} ${this.engine.state.nextStartPlayer === p.id ? '🚩' : ''}</span>
+        <span class="player-name" style="color:${color};">${p.name}${startTag}</span>
         <span class="player-score">🌟 ${score}</span>
       </div>
       <div class="player-meta">工人 ${p.res.workers}/${p.res.maxWorkers} · 房间 ${rooms} · 农田 ${fields}</div>
@@ -613,27 +666,31 @@ class BrowserGame {
         <span class="res-chip">🐮 ${p.animals.cow}</span>
         ${p.begging > 0 ? `<span class="res-chip" style="color:#b03a20; border-color:#c94a44;">🆘 ${p.begging}</span>` : ''}
       </div>
-      <div class="mini-card-container">
-        ${p.majors.map(m => `<div class="mini-card major" title="${m.desc||''}">${m.name.substring(0,2)}</div>`).join('')}
-      </div>
-      ${p.id === this.humanPlayerId ? this._renderHand(p) : ''}
+      ${this._renderPlayedCards(p)}
       <div class="farm-wrapper">${this._renderFarmGrid(p)}</div>
     `;
     return div;
   }
 
-  _renderHand(p) {
-    const occs = p.occupationHand || [];
-    const minors = p.minorHand || [];
+  _renderPlayedCards(p) {
+    const occs = (p.occupations || []).map(id => getCard(id)).filter(Boolean);
+    const minors = (p.minorImprovements || []).map(id => getCard(id)).filter(Boolean);
+    const majors = p.majors || [];
+
     let html = '';
     if (occs.length > 0) {
-      html += `<div class="section-title">手牌 · 职业 (${occs.length})</div><div class="mini-card-container">`;
+      html += `<div class="section-title">职业卡 (${occs.length})</div><div class="mini-card-container">`;
       html += occs.map(c => `<div class="mini-card occ" title="${c.name}：${c.desc || ''}">${c.name.substring(0, 2)}</div>`).join('');
       html += '</div>';
     }
     if (minors.length > 0) {
-      html += `<div class="section-title">手牌 · 次要改良 (${minors.length})</div><div class="mini-card-container">`;
+      html += `<div class="section-title">次要改良 (${minors.length})</div><div class="mini-card-container">`;
       html += minors.map(c => `<div class="mini-card minor" title="${c.name}：${c.desc || ''}">${c.name.substring(0, 2)}</div>`).join('');
+      html += '</div>';
+    }
+    if (majors.length > 0) {
+      html += `<div class="section-title">主要发展 (${majors.length})</div><div class="mini-card-container">`;
+      html += majors.map(m => `<div class="mini-card major" title="${m.desc || ''}">${m.name.substring(0, 2)}</div>`).join('');
       html += '</div>';
     }
     return html;
