@@ -72,8 +72,33 @@ class BrowserGame {
       });
     }
 
+    this._wireLogEvents();
     this.log('🎮 游戏开始！', '#4fc3f7');
     this._scheduleNextTurn();
+  }
+
+  // ======================== Ledger event wiring ========================
+
+  _wireLogEvents() {
+    const eng = this.engine;
+    eng.events.on('buildRoom', ({ player }) => {
+      this._pendingBuildNote = this._pendingBuildNote || {};
+      this._pendingBuildNote.room = true;
+    });
+    eng.events.on('renovate', ({ player }) => {
+      this._pendingBuildNote = this._pendingBuildNote || {};
+      this._pendingBuildNote.reno = true;
+    });
+    eng.events.on('fence', ({ player, pastureSize }) => {
+      this._pendingBuildNote = this._pendingBuildNote || {};
+      this._pendingBuildNote.fence = pastureSize || 0;
+    });
+    eng.events.on('buyMajor', ({ player, major }) => {
+      this._pendingCard = { kind: 'major', name: major.name, cost: major.cost };
+    });
+    eng.events.on('playCard', ({ player, card }) => {
+      this._pendingCard = { kind: card.type, name: card.name, cost: card.cost };
+    });
   }
 
   // ======================== Game Loop ========================
@@ -129,8 +154,9 @@ class BrowserGame {
       const elapsed = Date.now() - start;
 
       try {
+        this._beginActionLog();
         this.engine.applyAction(action);
-        this.log(`${p.name} 执行 ${action.label} (${elapsed}ms)`, this._playerColor(p));
+        this._commitActionLog(p, action);
       } catch (e) {
         console.error('AI action failed:', e);
         // Fallback: random
@@ -285,8 +311,10 @@ class BrowserGame {
 
   _executeHumanAction(action) {
     try {
+      this._beginActionLog();
       this.engine.applyAction(action);
-      this.log(`你执行了行动`, '#29b6f6');
+      const p = this.engine.state.players[this.humanPlayerId];
+      this._commitActionLog(p, action);
     } catch (e) {
       console.error('Action failed:', e);
       this._toast('行动失败: ' + e.message);
@@ -780,6 +808,112 @@ class BrowserGame {
     if (l) {
       l.innerHTML = `<div class="log-entry"><span style="color:${color||'#ccc'}">${msg}</span></div>` + l.innerHTML;
     }
+  }
+
+  // ======================== Detailed action ledger ========================
+
+  _resLabel(k) {
+    return {
+      wood: '木', clay: '砖', reed: '苇', stone: '石', food: '食',
+      grain: '麦', veg: '菜',
+      sheep: '羊', boar: '猪', cow: '牛',
+    }[k] || k;
+  }
+
+  _beginActionLog() {
+    const p = this.engine.currentPlayer;
+    this._preActionSnap = {
+      res: { ...p.res },
+      animals: { ...p.animals },
+    };
+    this._pendingBuildNote = null;
+    this._pendingCard = null;
+  }
+
+  _findActionLabel(action) {
+    if (!action) return '';
+    if (action.label) return action.label;
+    const act = [...this.engine._actionDefs, ...this.engine.state.roundCards]
+      .find(a => a.id === action.id);
+    return act ? act.name : action.id;
+  }
+
+  _commitActionLog(player, action) {
+    const color = this._playerColor(player);
+    const label = this._findActionLabel(action);
+
+    // Build / fence / renovate costs come out of the build_menu / fence /
+    // reno_* actions. We compute the resource delta vs. a pre-action snapshot
+    // taken before applyAction (see below).
+    const before = this._preActionSnap;
+
+    const head = `<b style="color:${color}">${player.name}</b> → ${label}`;
+    const detail = [];
+
+    // Card played via this action (occupation/minor/major).
+    if (this._pendingCard) {
+      const c = this._pendingCard;
+      const typeName = c.kind === 'occupation' ? '职业' :
+                       c.kind === 'minor' ? '次要改良' : '主要发展';
+      const costParts = [];
+      if (c.cost) {
+        for (const [k, v] of Object.entries(c.cost)) {
+          if (v) costParts.push(`-${v}${this._resLabel(k)}`);
+        }
+      }
+      detail.push(`<span style="color:#e8b64a">打出[${typeName}] ${c.name}</span>` +
+                  (costParts.length ? ` <span style="color:#e08a6a">${costParts.join(' ')}</span>` : ''));
+    }
+
+    // Build notes.
+    if (this._pendingBuildNote) {
+      const b = this._pendingBuildNote;
+      const bparts = [];
+      if (b.room) bparts.push('扩建房间');
+      if (b.reno) bparts.push('翻修');
+      if (b.fence) bparts.push(`建${b.fence}段栅栏`);
+      if (bparts.length) detail.push(`<span style="color:#b98a55">${bparts.join('、')}</span>`);
+    }
+
+    // Resource/animal delta against the snapshot (catches build & fence costs).
+    if (before) {
+      const resKeys = ['wood', 'clay', 'reed', 'stone', 'food', 'grain', 'veg'];
+      for (const k of resKeys) {
+        const d = (player.res[k] || 0) - (before.res[k] || 0);
+        if (d > 0 && !(this._pendingCard && this._pendingCard.cost && this._pendingCard.cost[k])) {
+          detail.push(`<span style="color:#8fcf6f">+${d}${this._resLabel(k)}</span>`);
+        } else if (d < 0) {
+          detail.push(`<span style="color:#e08a6a">${d}${this._resLabel(k)}</span>`);
+        }
+      }
+      for (const k of ['sheep', 'boar', 'cow']) {
+        const d = (player.animals[k] || 0) - (before.animals[k] || 0);
+        if (d > 0) detail.push(`<span style="color:#8fcf6f">+${d}${this._resLabel(k)}</span>`);
+        else if (d < 0) detail.push(`<span style="color:#e08a6a">${d}${this._resLabel(k)}</span>`);
+      }
+    }
+
+    // Special actions without resource deltas worth calling out.
+    if (action.mode === 'grow' || action.mode === 'grow_force') {
+      detail.push('<span style="color:#e8b64a">家庭成员 +1</span>');
+    }
+    if (action.mode === 'plow' || action.mode === 'plow_sow') {
+      detail.push('<span style="color:#b98a55">开垦农田</span>');
+    }
+    if (action.mode === 'sow' || action.mode === 'plow_sow') {
+      // sowing handled via res delta if it happened; add a marker if nothing else.
+      if (!detail.some(d => d.includes('农田'))) detail.push('<span style="color:#b98a55">播种</span>');
+    }
+    if (action.mode === 'meeting' && !this._pendingCard) {
+      detail.push('<span style="color:#b98a55">取得下轮先手</span>');
+    }
+
+    const line = head + (detail.length ? `　<span style="color:#d8c4a0">|</span> ${detail.join(' ')}` : '');
+    this.log(line, color);
+
+    this._preActionSnap = null;
+    this._pendingBuildNote = null;
+    this._pendingCard = null;
   }
 
   setAIIterations(n) {
