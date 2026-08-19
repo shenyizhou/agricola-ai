@@ -100,6 +100,7 @@ class GameEngine {
           mode: act.mode,
           res: act.res,
           amount: act.cur || act.amount || 0,
+          lessonCost: act.lessonCost,
           ...legal.extra,
         });
       }

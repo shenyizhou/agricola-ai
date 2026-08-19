@@ -224,6 +224,13 @@ function evaluateState(engine, pId) {
   score += p.majors.length * 1.5;
   score += p.majors.reduce((s, m) => s + (m.score || 0), 0);
 
+  // Played occupations & minor improvements: their effects compound over every
+  // remaining round, so they carry ongoing value beyond any immediate VP.
+  // Occupations are valued higher because several are best played early (the
+  // first lesson is free), so an early occupation pays off all game long.
+  score += p.occupations.length * 2.0;
+  score += p.minorImprovements.length * 1.0;
+
   // Begging
   score -= p.begging * 8;
 
@@ -370,6 +377,33 @@ function stagedRolloutPolicy(engine, actions) {
     if (foodAction) return foodAction;
   }
 
+  // 2b) Free first occupation: the first lesson is free, so the lesson space is
+  //     hotly contested in the opening. Grab it early — but only the free one;
+  //     paid lessons wait until the room/food engine is secured (step 3e).
+  if (p.occupationHand.length > 0) {
+    const lesson = byMode('lesson') || byMode('lesson2');
+    if (lesson) {
+      const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
+      if (cost === 0 && round <= 4) return lesson;
+    }
+  }
+
+  // 2c) Meeting space (next start player) must be grabbed in two tempo spots,
+  //     even without a minor improvement to play:
+  //     - Round 4/5: grow (生儿育女) unlocks in stage 2 (rounds 5-7). If it
+  //       hasn't appeared yet and we (or others) can grow, becoming start player
+  //       guarantees the first pick of the grow space next round.
+  //     - Round 11: round 12 reveals one of the powerful last-stage cards
+  //       (犁地+播种 / 急于求成 / 翻修+栅栏); start player gets first crack.
+  const meeting = byMode('meeting');
+  const growUnlocked = (engine.state.roundCards || []).some(c => c.mode === 'grow');
+  const canGrow = rooms > workers || emptyRooms > 0;
+  if (meeting) {
+    if (round === 4 && !growUnlocked && canGrow) return meeting;
+    if (round === 5 && !growUnlocked && canGrow) return meeting;
+    if (round === 11) return meeting;
+  }
+
   // 3) Build a room when affordable and we can still grow. Don't over-invest
   //    in rooms (wood/reed) until a food engine is producing, or we starve.
   const totalAnimalsPre = p.animals.sheep + p.animals.boar + p.animals.cow;
@@ -446,6 +480,24 @@ function stagedRolloutPolicy(engine, actions) {
   if (round <= 5) {
     const market = actions.find(a => a.type === 'res_combo');
     if (market) return market;
+  }
+
+  // 3e) Additional cards once the foundation is set (3+ workers). Extra
+  //     occupations and playable minor improvements are worth an action, but
+  //     only after the opening room/growth so we don't starve chasing cards.
+  if (workers >= 3) {
+    if (p.occupationHand.length > 0 && p.occupations.length < 3 && round <= 9) {
+      const lesson = byMode('lesson') || byMode('lesson2');
+      if (lesson) {
+        const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
+        if (p.res.food >= cost + 2) return lesson;
+      }
+    }
+    // Meeting space only when we can actually play a minor improvement.
+    if (p.minorHand && p.minorHand.length > 0 && engine._pickPlayableMinor && round <= 10) {
+      const meeting = byMode('meeting');
+      if (meeting && engine._pickPlayableMinor(p)) return meeting;
+    }
   }
 
   // 4) Sheep bulk grab is part of the food engine: with a cooker, 2 sheep = 4

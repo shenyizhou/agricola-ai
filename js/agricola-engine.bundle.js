@@ -73,7 +73,7 @@ const ROUND_CARDS_POOL = [
     { id:'r_cow', name:'🐮 牛 (1牛)', acc:1, cur:1, type:'res', res:'cow', stage:4 },
     { id:'r_stone2', name:'🪨 东部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:4 },
     { id:'r_plow_sow', name:'🚜 犁地+播种', type:'special', mode:'plow_sow', stage:5 },
-    { id:'r_grow2', name:'👶 求子心切', type:'special', mode:'grow_force', stage:5 },
+    { id:'r_grow2', name:'👶 急于求成', type:'special', mode:'grow_force', stage:5 },
     { id:'r_reno_fence', name:'🔨 翻修+栅栏', type:'special', mode:'reno_fence', stage:6 }
 ];
 
@@ -1831,6 +1831,7 @@ class GameEngine {
           mode: act.mode,
           res: act.res,
           amount: act.cur || act.amount || 0,
+          lessonCost: act.lessonCost,
           ...legal.extra,
         });
       }
@@ -2631,9 +2632,12 @@ function evaluateState(engine, pId) {
   if (workers >= 4) score += roundsLeft * 1.0;
   if (workers >= 5) score += roundsLeft * 0.5;
 
-  // Empty rooms are almost as good as workers (growth is imminent).
-  score += Math.min(1, emptyRooms) * roundsLeft * 1.0;
-  if (emptyRooms > 1) score += (emptyRooms - 1) * roundsLeft * 0.3;
+  // Empty rooms are a worker "in waiting": one grow action away from a new
+  // worker. Value them slightly below a worker (1.5) but clearly ABOVE the
+  // "ready to build" state below, so the AI actually converts resources into
+  // rooms instead of hoarding them.
+  score += Math.min(1, emptyRooms) * roundsLeft * 1.3;
+  if (emptyRooms > 1) score += (emptyRooms - 1) * roundsLeft * 0.4;
 
   // Build-readiness: if worker-capped and close to affording the NEXT room.
   // Target 3 workers first; only push for 4th if game is past R7; 5th past R10.
@@ -2641,8 +2645,9 @@ function evaluateState(engine, pId) {
   if (emptyRooms === 0 && wantMoreRooms) {
     const cost = roomCost(p.houseType);
     const frac = affordFraction(p, cost);
-    // Early spike for 3-worker push: coefficient much higher R1-6.
-    const spike = (workers === 2 && round <= 6) ? 4.5 : 2.5;
+    // Readiness must be worth LESS than actually having the empty room (1.3),
+    // otherwise the AI hoards build materials and never builds.
+    const spike = (workers === 2 && round <= 6) ? 0.9 : 0.6;
     score += frac * roundsLeft * spike;
     // Small base signal even when frac==0 so the AI starts accumulating.
     score += (1 - frac) * roundsLeft * 0.4;
@@ -2713,7 +2718,9 @@ function evaluateState(engine, pId) {
     // signal even when frac==0 so the AI accumulates clay, plus a big spike
     // when we're close (1 clay) or can buy it (frac==1).
     const cookerUrgency = round >= 5 ? 1.5 : (round >= 3 ? 0.8 : 0.3);
-    score += frac * 4 * cookerUrgency;
+    // Readiness must be worth LESS than actually owning a cooker (~5.5 pts:
+    // 3 base + 1.5 major + 1 score), else the AI hoards clay and never buys one.
+    score += frac * 2 * cookerUrgency;
     score += (1 - frac) * 1.5 * cookerUrgency;
   } else {
     // Cooker owned: solid food engine.
@@ -2782,6 +2789,13 @@ function evaluateState(engine, pId) {
   // Majors (cook improvement especially)
   score += p.majors.length * 1.5;
   score += p.majors.reduce((s, m) => s + (m.score || 0), 0);
+
+  // Played occupations & minor improvements: their effects compound over every
+  // remaining round, so they carry ongoing value beyond any immediate VP.
+  // Occupations are valued higher because several are best played early (the
+  // first lesson is free), so an early occupation pays off all game long.
+  score += p.occupations.length * 2.0;
+  score += p.minorImprovements.length * 1.0;
 
   // Begging
   score -= p.begging * 8;
@@ -2902,7 +2916,9 @@ function stagedRolloutPolicy(engine, actions) {
     const sownCrops = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
     const foodEngine = hasCook && (totalAnimals >= 2 || sownCrops >= 1);
     let foodOk;
-    if (workers === 2) foodOk = round <= 7;              // opening 3rd worker
+    // 3rd worker is the biggest multiplier in the game; grow it as soon as an
+    // empty room exists, then gate the 4th/5th on a real food engine.
+    if (workers === 2) foodOk = round <= 9 || p.res.food >= nextNeed + 2 || foodEngine;
     else if (workers === 3) foodOk = foodEngine || p.res.food >= nextNeed + 4; // 4th
     else foodOk = foodEngine && (totalAnimals >= 3 || sownCrops >= 2 ||
       p.res.food >= nextNeed + 4);                        // 5th
@@ -2927,14 +2943,44 @@ function stagedRolloutPolicy(engine, actions) {
     if (foodAction) return foodAction;
   }
 
+  // 2b) Free first occupation: the first lesson is free, so the lesson space is
+  //     hotly contested in the opening. Grab it early — but only the free one;
+  //     paid lessons wait until the room/food engine is secured (step 3e).
+  if (p.occupationHand.length > 0) {
+    const lesson = byMode('lesson') || byMode('lesson2');
+    if (lesson) {
+      const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
+      if (cost === 0 && round <= 4) return lesson;
+    }
+  }
+
+  // 2c) Meeting space (next start player) must be grabbed in two tempo spots,
+  //     even without a minor improvement to play:
+  //     - Round 4/5: grow (生儿育女) unlocks in stage 2 (rounds 5-7). If it
+  //       hasn't appeared yet and we (or others) can grow, becoming start player
+  //       guarantees the first pick of the grow space next round.
+  //     - Round 11: round 12 reveals one of the powerful last-stage cards
+  //       (犁地+播种 / 急于求成 / 翻修+栅栏); start player gets first crack.
+  const meeting = byMode('meeting');
+  const growUnlocked = (engine.state.roundCards || []).some(c => c.mode === 'grow');
+  const canGrow = rooms > workers || emptyRooms > 0;
+  if (meeting) {
+    if (round === 4 && !growUnlocked && canGrow) return meeting;
+    if (round === 5 && !growUnlocked && canGrow) return meeting;
+    if (round === 11) return meeting;
+  }
+
   // 3) Build a room when affordable and we can still grow. Don't over-invest
   //    in rooms (wood/reed) until a food engine is producing, or we starve.
   const totalAnimalsPre = p.animals.sheep + p.animals.boar + p.animals.cow;
   const sownCropsPre = p.farmContent ? p.farmContent.filter(c => c != null).length : 0;
   const foodEnginePre = hasCook && (totalAnimalsPre >= 2 || sownCropsPre >= 1);
+  // Priority ladder per strategy: the FIRST room (2→3 workers) is the top
+  // building priority. Only after the food engine is stable AND there are
+  // still enough rounds left do we build a 4th/5th room; otherwise points.
   const wantBuild = (workers < 3) ||
-    (workers < 4 && foodEnginePre) ||
-    (workers < 5 && foodEnginePre && (totalAnimalsPre >= 3 || sownCropsPre >= 2));
+    (workers < 4 && foodEnginePre && round <= 9) ||
+    (workers < 5 && foodEnginePre && (totalAnimalsPre >= 3 || sownCropsPre >= 2) && round <= 7);
   if (emptyRooms === 0 && wantBuild) {
     const cost = roomCost(p.houseType);
     if (canAfford(p, cost)) {
@@ -2972,6 +3018,15 @@ function stagedRolloutPolicy(engine, actions) {
     }
   }
 
+  // 3a) Once the first room is built and we've grown to 3 workers, the food
+  //     engine becomes the top non-grow priority. Without a cooker the 3-worker
+  //     household starves; grab clay now even if it delays a 4th room.
+  if (!hasCook && workers >= 3 && p.res.clay < 2) {
+    const clayActs = actions.filter(a => a.type === 'res' && a.res === 'clay')
+      .sort((x, y) => (y.amount || 0) - (x.amount || 0));
+    if (clayActs.length > 0) return clayActs[0];
+  }
+
   // 3b) Buy cooker once 2 clay available AND room is built or materials secured.
   if (!hasCook && p.res.clay >= 2 && (workers >= 3 || canAfford(p, roomCost(p.houseType)) || round >= 4)) {
     const major = byMode('major');
@@ -2991,6 +3046,24 @@ function stagedRolloutPolicy(engine, actions) {
   if (round <= 5) {
     const market = actions.find(a => a.type === 'res_combo');
     if (market) return market;
+  }
+
+  // 3e) Additional cards once the foundation is set (3+ workers). Extra
+  //     occupations and playable minor improvements are worth an action, but
+  //     only after the opening room/growth so we don't starve chasing cards.
+  if (workers >= 3) {
+    if (p.occupationHand.length > 0 && p.occupations.length < 3 && round <= 9) {
+      const lesson = byMode('lesson') || byMode('lesson2');
+      if (lesson) {
+        const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
+        if (p.res.food >= cost + 2) return lesson;
+      }
+    }
+    // Meeting space only when we can actually play a minor improvement.
+    if (p.minorHand && p.minorHand.length > 0 && engine._pickPlayableMinor && round <= 10) {
+      const meeting = byMode('meeting');
+      if (meeting && engine._pickPlayableMinor(p)) return meeting;
+    }
   }
 
   // 4) Sheep bulk grab is part of the food engine: with a cooker, 2 sheep = 4
@@ -3300,9 +3373,10 @@ class MCTSAI {
     this.iterations = options.iterations || 1000;
     this.exploration = options.exploration ?? Math.SQRT2;
     this.rolloutPolicy = options.rolloutPolicy || stagedRolloutPolicy;
-    // Opponents during rollout: default to greedy (matches the common arena
-    // setup MCTS-vs-greedy) so score estimates reflect realistic opponents.
-    this.opponentRolloutPolicy = options.opponentRolloutPolicy || greedyPolicy;
+    // Opponents during rollout default to staged (fast, ~9x cheaper than greedy
+    // which clones per candidate). Staged also plays stronger than greedy, so
+    // score estimates reflect more realistic opponents.
+    this.opponentRolloutPolicy = options.opponentRolloutPolicy || stagedRolloutPolicy;
     this.rolloutDepth = options.rolloutDepth || 0; // 0 = play to end
     this.verbose = options.verbose || false;
     this.playerId = options.playerId ?? 0;
