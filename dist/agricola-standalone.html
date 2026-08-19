@@ -804,15 +804,15 @@ const DB_MAJORS = [
 ];
 
 const BASE_ACTIONS = [
-    { id:'act_forest_3', name:'🌲 森林 (3木)', acc:3, cur:3, type:'res', res:'wood' },
-    { id:'act_forest_2', name:'🌳 树林 (2木)', acc:2, cur:2, type:'res', res:'wood' },
-    { id:'act_forest_1', name:'🌱 林地 (1木)', acc:1, cur:1, type:'res', res:'wood' },
-    { id:'act_clay_pit', name:'🧱 粘土坑 (1砖)', acc:1, cur:1, type:'res', res:'clay' },
-    { id:'act_hollow', name:'🧱 泥坑 (2砖)', acc:2, cur:2, type:'res', res:'clay' },
-    { id:'act_reed1', name:'🎋 芦苇岸 (1苇)', acc:1, cur:1, type:'res', res:'reed' },
-    { id:'act_fish', name:'🐟 钓鱼 (1食)', acc:1, cur:1, type:'res', res:'food' },
-    { id:'act_travel', name:'🎭 卖艺 (1食)', acc:1, cur:1, type:'res', res:'food' },
-    { id:'act_labor', name:'👷 临时工 (2食)', type:'res', res:'food', amount:2 },
+    { id:'act_forest_3', name:'🌲 森林', acc:3, cur:3, type:'res', res:'wood' },
+    { id:'act_forest_2', name:'🌳 树林', acc:2, cur:2, type:'res', res:'wood' },
+    { id:'act_forest_1', name:'🌱 林地', acc:1, cur:1, type:'res', res:'wood' },
+    { id:'act_clay_pit', name:'🧱 粘土坑', acc:1, cur:1, type:'res', res:'clay' },
+    { id:'act_hollow', name:'🧱 泥坑', acc:2, cur:2, type:'res', res:'clay' },
+    { id:'act_reed1', name:'🎋 芦苇池', acc:1, cur:1, type:'res', res:'reed' },
+    { id:'act_fish', name:'🐟 钓鱼', acc:1, cur:1, type:'res', res:'food' },
+    { id:'act_travel', name:'🎭 卖艺', acc:1, cur:1, type:'res', res:'food' },
+    { id:'act_labor', name:'👷 临时工', type:'res', res:'food', amount:2 },
     { id:'act_grain', name:'🌾 小麦种子', type:'res', res:'grain', amount:1 },
     { id:'act_meeting', name:'👥 聚会场所', type:'special', mode:'meeting', desc:'成为下轮起始玩家，可打1张次要改良' },
     { id:'act_lessons', name:'🎓 职业训练', type:'special', mode:'lesson', lessonCost:[0,1], desc:'花1食打1张职业（第一张免费）' },
@@ -823,19 +823,19 @@ const BASE_ACTIONS = [
 ];
 
 const ROUND_CARDS_POOL = [
-    { id:'r_sheep', name:'🐑 牧羊 (1羊)', acc:1, cur:1, type:'res', res:'sheep', stage:1 },
+    { id:'r_sheep', name:'🐑 绵羊市场', acc:1, cur:1, type:'res', res:'sheep', stage:1 },
     { id:'r_sow', name:'🌱 播种', type:'special', mode:'sow', stage:1 },
     { id:'r_fences', name:'🚧 栅栏', type:'special', mode:'fence', stage:1 },
     { id:'r_major', name:'🏗️ 发展卡', type:'special', mode:'major', stage:1 },
-    { id:'r_stone', name:'🪨 西部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:2 },
+    { id:'r_stone', name:'🪨 西矿场', acc:1, cur:1, type:'res', res:'stone', stage:2 },
     { id:'r_reno', name:'🔨 翻修+发展卡', type:'special', mode:'reno_major', stage:2 },
     { id:'r_grow', name:'👶 生儿育女', type:'special', mode:'grow', stage:2, desc:'需空房 > 人口' },
-    { id:'r_boar', name:'🐗 野猪 (1猪)', acc:1, cur:1, type:'res', res:'boar', stage:3 },
+    { id:'r_boar', name:'🐗 猪市场', acc:1, cur:1, type:'res', res:'boar', stage:3 },
     { id:'r_veg', name:'🥕 蔬菜', type:'res', res:'veg', amount:1, stage:3 },
-    { id:'r_cow', name:'🐮 牛 (1牛)', acc:1, cur:1, type:'res', res:'cow', stage:4 },
-    { id:'r_stone2', name:'🪨 东部采石 (1石)', acc:1, cur:1, type:'res', res:'stone', stage:4 },
+    { id:'r_cow', name:'🐮 牛市场', acc:1, cur:1, type:'res', res:'cow', stage:4 },
+    { id:'r_stone2', name:'🪨 东矿场', acc:1, cur:1, type:'res', res:'stone', stage:4 },
     { id:'r_plow_sow', name:'🚜 犁地+播种', type:'special', mode:'plow_sow', stage:5 },
-    { id:'r_grow2', name:'👶 急于求成', type:'special', mode:'grow_force', stage:5 },
+    { id:'r_grow2', name:'👶 求子心切', type:'special', mode:'grow_force', stage:5 },
     { id:'r_reno_fence', name:'🔨 翻修+栅栏', type:'special', mode:'reno_fence', stage:6 }
 ];
 
@@ -3735,7 +3735,7 @@ function stagedRolloutPolicy(engine, actions) {
   //       hasn't appeared yet and we (or others) can grow, becoming start player
   //       guarantees the first pick of the grow space next round.
   //     - Round 11: round 12 reveals one of the powerful last-stage cards
-  //       (犁地+播种 / 急于求成 / 翻修+栅栏); start player gets first crack.
+  //       (犁地+播种 / 求子心切 / 翻修+栅栏); start player gets first crack.
   const meeting = byMode('meeting');
   const growUnlocked = (engine.state.roundCards || []).some(c => c.mode === 'grow');
   const canGrow = rooms > workers || emptyRooms > 0;

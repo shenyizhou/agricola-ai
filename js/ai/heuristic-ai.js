@@ -394,7 +394,7 @@ function stagedRolloutPolicy(engine, actions) {
   //       hasn't appeared yet and we (or others) can grow, becoming start player
   //       guarantees the first pick of the grow space next round.
   //     - Round 11: round 12 reveals one of the powerful last-stage cards
-  //       (犁地+播种 / 急于求成 / 翻修+栅栏); start player gets first crack.
+  //       (犁地+播种 / 求子心切 / 翻修+栅栏); start player gets first crack.
   const meeting = byMode('meeting');
   const growUnlocked = (engine.state.roundCards || []).some(c => c.mode === 'grow');
   const canGrow = rooms > workers || emptyRooms > 0;
