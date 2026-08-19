@@ -412,10 +412,6 @@ class BrowserGame {
     });
   }
 
-  _resLabel(k) {
-    return { wood: '木', clay: '砖', stone: '石', reed: '苇' }[k] || k;
-  }
-
   _costLine(p, cost) {
     return Object.entries(cost || {}).map(([k, v]) => {
       const have = p.res[k] ?? 0;
@@ -642,9 +638,48 @@ class BrowserGame {
     }
 
     if (act.acc && act.cur > 0) {
-      d.innerHTML += `<div class="acc-badge">${act.cur}</div>`;
+      const icon = this._resIcon(act.res);
+      const cap = 5;
+      const n = act.cur;
+      let icons = '';
+      if (icon) {
+        const shown = Math.min(n, cap);
+        icons = `<span class="acc-icons">${icon.repeat(shown)}${n > cap ? ` <em>+${n - cap}</em>` : ''}</span>`;
+      }
+      d.innerHTML += `<div class="acc-badge"><span class="acc-num">${n}</span>${icons}</div>`;
     }
     container.appendChild(d);
+  }
+
+  _resIcon(k) {
+    return {
+      wood: '🪵', clay: '🧱', reed: '🎋', stone: '🪨',
+      food: '🍞', grain: '🌾', veg: '🥕',
+      sheep: '🐑', boar: '🐗', cow: '🐮',
+    }[k] || '';
+  }
+
+  _resLabel(k) {
+    return {
+      wood: '木', clay: '砖', reed: '苇', stone: '石',
+      food: '食', grain: '麦', veg: '菜',
+      sheep: '羊', boar: '猪', cow: '牛',
+    }[k] || k;
+  }
+
+  _resChip(k, n) {
+    const ico = this._resIcon(k);
+    return `<span class="res-chip" title="${this._resLabel(k)}">${ico} ${n}</span>`;
+  }
+
+  _foodChip(p) {
+    // Display food as a/b where a = current food, b = food needed to feed
+    // the current population at the next harvest (2 food per worker).
+    const cur = p.res.food;
+    const need = p.res.maxWorkers * 2;
+    const deficit = cur < need;
+    const cls = deficit ? 'res-chip res-chip-warn' : 'res-chip';
+    return `<span class="${cls}" title="食物：当前 ${cur} / 下次收获需要 ${need}">🍞 ${cur}<span class="res-need">/${need}</span></span>`;
   }
 
   _renderPlayers() {
@@ -680,13 +715,13 @@ class BrowserGame {
       </div>
       <div class="player-meta">工人 ${p.res.workers}/${p.res.maxWorkers} · 房间 ${rooms} · 农田 ${fields}</div>
       <div class="res-row">
-        <span class="res-chip">🪵 ${p.res.wood}</span>
-        <span class="res-chip">🧱 ${p.res.clay}</span>
-        <span class="res-chip">🎋 ${p.res.reed}</span>
-        <span class="res-chip">🪨 ${p.res.stone}</span>
-        <span class="res-chip">🥣 ${p.res.food}</span>
-        <span class="res-chip">🌾 ${p.res.grain}</span>
-        <span class="res-chip">🥕 ${p.res.veg}</span>
+        ${this._resChip('wood', p.res.wood)}
+        ${this._resChip('clay', p.res.clay)}
+        ${this._resChip('reed', p.res.reed)}
+        ${this._resChip('stone', p.res.stone)}
+        ${this._foodChip(p)}
+        ${this._resChip('grain', p.res.grain)}
+        ${this._resChip('veg', p.res.veg)}
       </div>
       <div class="res-row">
         <span class="res-chip">🐑 ${p.animals.sheep}</span>

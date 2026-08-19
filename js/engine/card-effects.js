@@ -614,18 +614,31 @@ class CardEffectSystem {
 
   _startOfWork(p, card, eff) {
     if (eff.custom === 'nightworkerPlaceFarmer') {
-      // C125 Nightworker: for each building resource at 0, take from the
-      // largest accumulator of that type (headless approximation of placing
-      // a farmer ahead of the round).
+      // C125 Nightworker: at the start of the work phase, for each building
+      // resource (wood/clay/reed/stone) the player holds 0 of, place ONE
+      // farmer on the largest available accumulator for that resource and
+      // immediately collect its current accumulation. This consumes one of
+      // the player's workers AND occupies the action tile for the round
+      // (other players cannot use it).
+      if (p.res.workers <= 0) return;
       for (const res of ['wood', 'clay', 'reed', 'stone']) {
+        if (p.res.workers <= 0) break;
         if (p.res[res] > 0) continue;
         let best = null;
         for (const a of [...this.engine._actionDefs, ...this.state.roundCards]) {
-          if (a.res === res && a.acc && a.cur > 0 && (!best || a.cur > best.cur)) best = a;
+          if (a.res !== res || !a.acc) continue;
+          if (this.state.occupied[a.id] !== undefined) continue;
+          if ((a.cur || 0) <= 0) continue;
+          if (!best || a.cur > best.cur) best = a;
         }
         if (best) {
-          p.res[res] += best.cur;
+          const amount = best.cur;
+          p.res[res] += amount;
           best.cur = 0;
+          p.res.workers--;
+          this.state.occupied[best.id] = p.id;
+          this.e.emit('placeWorker', { player: p, action: best, fromCard: true });
+          this.e.emit('obtain', { player: p, resource: res, amount, fromCard: true });
         }
       }
     }

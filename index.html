@@ -278,12 +278,32 @@
             background: linear-gradient(180deg, #d3543a, #a03a24);
             color: #fff;
             font-size: 11px;
-            padding: 1px 7px;
-            border-radius: 999px;
+            padding: 1px 6px;
+            border-radius: 8px;
             z-index: 2;
             border: 1px solid #7a2a14;
             font-weight: 800;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            line-height: 1.1;
+        }
+        .acc-badge .acc-num {
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .acc-badge .acc-icons {
+            font-size: 11px;
+            letter-spacing: -2px;
+            opacity: 0.95;
+        }
+        .acc-badge .acc-icons em {
+            font-style: normal;
+            font-size: 10px;
+            letter-spacing: 0;
+            opacity: 0.85;
+            margin-left: 1px;
         }
         .worker-token {
             position: absolute;
@@ -395,6 +415,20 @@
             padding: 2px 8px;
             border-radius: 6px;
             border: 1px solid rgba(138,90,51,0.14);
+        }
+        .res-chip .res-need {
+            color: #9a7a55;
+            font-weight: 500;
+            font-size: 11px;
+        }
+        .res-chip-warn {
+            background: rgba(201, 74, 68, 0.12);
+            border-color: rgba(201, 74, 68, 0.45);
+            color: #a83a2e;
+        }
+        .res-chip-warn .res-need {
+            color: #c94a44;
+            font-weight: 700;
         }
 
         .farm-wrapper {
