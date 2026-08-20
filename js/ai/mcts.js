@@ -12,6 +12,7 @@
 const { GameEngine } = require('../engine/GameEngine');
 const { cloneState } = require('../engine/GameState');
 const { randomPolicy, stagedRolloutPolicy, greedyPolicy, evaluateState, pruneDominatedActions, filterNoopActions, resolveActionChoices, cloneEngineForSimulation } = require('./heuristic-ai');
+const { choosePlan } = require('./card-values');
 
 // ======================== Tree Node ========================
 
@@ -80,6 +81,11 @@ class MCTSAI {
    */
   selectAction(engine) {
     this.playerId = engine.currentPlayer.id;
+    // Commit to a build-around plan on the opening turn (idempotent).
+    const realP = engine.state.players[this.playerId];
+    if (engine.state.round <= 2 && realP && !realP.aiPlan) {
+      choosePlan(realP, engine);
+    }
     const rootEngine = cloneEngineForSimulation(engine);
     const root = new MCTSNode(rootEngine);
     root.unexploredActions = filterNoopActions(rootEngine,
@@ -120,6 +126,7 @@ class MCTSAI {
           best = child;
         }
       }
+      if (!best) return node;
       node = best;
     }
     return node;

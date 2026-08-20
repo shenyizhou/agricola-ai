@@ -54,7 +54,7 @@ const OCCUPATIONS = [
     name: '伐木工', nameEn: 'Wood Cutter',
     players: '1+', cost: null,
     effects: [{ trigger: 'onCollect', resource: 'wood', gain: { wood: 1 } }],
-    desc: '每次使用木材累积格，额外 +1 木。'
+    desc: '你每次使用一个木材累积格时，额外获得1个木材。'
   },
   {
     id: 'A143', deck: 'A', type: 'occupation',

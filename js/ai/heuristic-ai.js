@@ -9,6 +9,10 @@
 const { GameEngine } = require('../engine/GameEngine');
 const { cloneState } = require('../engine/GameState');
 const { LIMIT_FENCES } = require('../constants');
+const {
+  valueCard, choosePlan, planProgress, planResourceMultiplier,
+  planActionInterest, bestCardInHand,
+} = require('./card-values');
 
 const HEUR_HARVEST_ROUNDS = [4, 7, 9, 11, 13, 14];
 const HEUR_MAX_ROUNDS = 14;
@@ -57,7 +61,9 @@ function evaluateState(engine, pId) {
   const rooms = p.farm.filter(t => t === 1).length;
   const fields = p.farm.filter(t => t === 2).length;
   const workers = p.res.maxWorkers;
-  const emptyRooms = rooms - workers; // capacity for new children
+  const emptyRooms = rooms - workers;
+  const plan = p.aiPlan || null;
+  const resMul = (k) => plan ? planResourceMultiplier(plan, k) : 1.0; // capacity for new children
 
   // ===== Workers: the dominant multiplier =====
   // Per the beginner guide: target is 3 workers (5 wood + 2 reed → 3-room house
@@ -110,10 +116,10 @@ function evaluateState(engine, pId) {
   // build-readiness above. Wood is ranked highest among build resources
   // because it builds BOTH rooms AND fences; clay mainly renovates/cooks;
   // reed is scarce (needed for every build and reno); stone is late-game.
-  score += p.res.wood * 0.35;
-  score += p.res.clay * 0.2;
-  score += p.res.reed * 0.4;
-  score += p.res.stone * 0.4;
+  score += p.res.wood * 0.35 * resMul('wood');
+  score += p.res.clay * 0.2 * resMul('clay');
+  score += p.res.reed * 0.4 * resMul('reed');
+  score += p.res.stone * 0.4 * resMul('stone');
 
   // Reno readiness: if wood/clay house and close to affording reno, value it
   const rc = renoCost(p.houseType, rooms);
@@ -166,15 +172,17 @@ function evaluateState(engine, pId) {
   // is a food engine (1 grain → bakeRate food), so value it higher then.
   const baker = p.majors.find(m => m.bakeRate || m.specialBake);
   const grainFood = baker ? (baker.specialBake ? baker.specialBake.out / baker.specialBake.in : baker.bakeRate) : 1;
-  score += p.res.grain * Math.max(0.5, grainFood * 0.8);
-  score += p.res.veg * 1.0;
-  score += p.animals.sheep * 1.5;
-  score += p.animals.boar * 2.0;
-  score += p.animals.cow * 3.0;
+  score += p.res.grain * Math.max(0.5, grainFood * 0.8) * resMul('grain');
+  score += p.res.veg * 1.0 * resMul('veg');
+  score += p.res.food * (plan ? (planResourceMultiplier(plan, 'food') - 1) * 0.5 : 0);
+  score += p.animals.sheep * 1.5 * resMul('sheep');
+  score += p.animals.boar * 2.0 * resMul('boar');
+  score += p.animals.cow * 3.0 * resMul('cow');
 
   // ===== Farm development =====
   // Fields: 5 fields = 4 endgame pts, plus sown crops generate food/grain/veg.
-  score += fields * 3.5;
+  // Big-farm plan values fields even more strongly.
+  score += fields * 3.5 * (plan && plan.archetype === 'farm' ? 1.35 : 1.0);
   if (fields >= 2) score += 2;
   if (fields >= 4) score += 3;
   if (fields >= 5) score += 2;
@@ -224,12 +232,26 @@ function evaluateState(engine, pId) {
   score += p.majors.length * 1.5;
   score += p.majors.reduce((s, m) => s + (m.score || 0), 0);
 
-  // Played occupations & minor improvements: their effects compound over every
-  // remaining round, so they carry ongoing value beyond any immediate VP.
-  // Occupations are valued higher because several are best played early (the
-  // first lesson is free), so an early occupation pays off all game long.
-  score += p.occupations.length * 2.0;
-  score += p.minorImprovements.length * 1.0;
+  // Played occupations & minor improvements: sum each card's timed valuation
+  // instead of a flat count, so S-tier build-arounds outweigh filler. Scale the
+  // total down because individual values already encode ongoing impact.
+  const cardCtx = { round, p, engine, played: true };
+  let cardSum = 0;
+  for (const id of p.occupations || []) {
+    cardSum += valueCard({ id }, cardCtx);
+  }
+  for (const id of p.minorImprovements || []) {
+    cardSum += valueCard({ id }, cardCtx);
+  }
+  score += cardSum * 0.8;
+
+  // Plan bonus/penalty: being on schedule with a build-around north star is
+  // worth a meaningful chunk; falling behind drags the score down so rollouts
+  // steer back toward the milestones.
+  if (plan) {
+    const prog = planProgress(plan, p, engine);
+    score += prog * 1.5;
+  }
 
   // Begging
   score -= p.begging * 8;
@@ -321,6 +343,8 @@ function stagedRolloutPolicy(engine, actions) {
   const pId = engine.currentPlayer.id;
   const p = engine.state.players[pId];
   const round = engine.state.round;
+  // Commit to a build-around plan on the opening turn; idempotent thereafter.
+  if (round <= 2 && !p.aiPlan) choosePlan(p, engine);
   actions = filterNoopActions(engine, pruneDominatedActions(actions)).map(a => resolveActionChoices(engine, a));
 
   // Small epsilon noise keeps MCTS rollouts stochastic so it can average out
@@ -377,14 +401,24 @@ function stagedRolloutPolicy(engine, actions) {
     if (foodAction) return foodAction;
   }
 
-  // 2b) Free first occupation: the first lesson is free, so the lesson space is
-  //     hotly contested in the opening. Grab it early — but only the free one;
-  //     paid lessons wait until the room/food engine is secured (step 3e).
+  // 2b) First occupation: the first lesson is free, so the space is hotly
+  //     contested in the opening. We also grab a paid lesson early if the best
+  //     card in hand is strong enough (S/A tier: value >= 7) or is the north
+  //     star of a card-archetype plan.
   if (p.occupationHand.length > 0) {
     const lesson = byMode('lesson') || byMode('lesson2');
     if (lesson) {
       const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
-      if (cost === 0 && round <= 4) return lesson;
+      const best = bestCardInHand(p.occupationHand, { round, p, engine });
+      const isNorthStar = best && p.aiPlan && p.aiPlan.northStar === best.card.id;
+      const strong = best && best.value >= 7;
+      const cheapPaid = cost <= 1 && p.res.food >= cost + 4 && round <= 3;
+      if ((cost === 0 && round <= 4) ||
+          (strong && cost <= 2 && p.res.food >= cost + 4 && round <= 5) ||
+          (isNorthStar && p.aiPlan && p.aiPlan.archetype === 'cards' && round <= 6) ||
+          cheapPaid) {
+        return lesson;
+      }
     }
   }
 
@@ -483,20 +517,55 @@ function stagedRolloutPolicy(engine, actions) {
   }
 
   // 3e) Additional cards once the foundation is set (3+ workers). Extra
-  //     occupations and playable minor improvements are worth an action, but
-  //     only after the opening room/growth so we don't starve chasing cards.
+  //     occupations and playable minor improvements are worth an action when
+  //     the card itself is strong; weak filler waits until there's nothing
+  //     better to do.
   if (workers >= 3) {
-    if (p.occupationHand.length > 0 && p.occupations.length < 3 && round <= 9) {
+    if (p.occupationHand.length > 0 && (p.occupations.length < 4 ||
+        (p.aiPlan && p.aiPlan.archetype === 'cards')) && round <= 10) {
       const lesson = byMode('lesson') || byMode('lesson2');
       if (lesson) {
         const cost = engine._lessonCost ? engine._lessonCost(p, lesson) : 0;
-        if (p.res.food >= cost + 2) return lesson;
+        const best = bestCardInHand(p.occupationHand, { round, p, engine });
+        const threshold = p.aiPlan && p.aiPlan.archetype === 'cards' ? 3.5 : 5.0;
+        if (best && best.value >= threshold && p.res.food >= cost + 2) return lesson;
       }
     }
-    // Meeting space only when we can actually play a minor improvement.
-    if (p.minorHand && p.minorHand.length > 0 && engine._pickPlayableMinor && round <= 10) {
+    // Meeting space when we have a playable minor that's actually worth it.
+    if (p.minorHand && p.minorHand.length > 0 && engine._pickPlayableMinor && round <= 11) {
       const meeting = byMode('meeting');
-      if (meeting && engine._pickPlayableMinor(p)) return meeting;
+      if (meeting) {
+        const playable = engine._pickPlayableMinor(p);
+        if (playable) {
+          const v = valueCard(playable, { round, p, engine });
+          const isNorthStar = p.aiPlan && p.aiPlan.northStar === playable.id;
+          if (v >= 4.5 || isNorthStar) return meeting;
+        }
+      }
+    }
+  }
+
+  // 3f) Plan-driven actions: if we've committed to a build-around, steer the
+  //     early/mid game toward its milestones. Each archetype declares which
+  //     action modes/resources it cares about right now; we pick the highest-
+  //     interest match that's actually available. Kept AFTER grow/food/room
+  //     so survival fundamentals still win, but BEFORE generic plow/fence so
+  //     the plan actually changes priorities.
+  if (p.aiPlan) {
+    const interest = planActionInterest(p.aiPlan, p, engine);
+    const candidates = [];
+    for (const a of actions) {
+      let w = 0;
+      if (a.mode && interest[a.mode]) w += interest[a.mode];
+      if (a.type === 'res' && interest[a.res]) w += interest[a.res];
+      const idKey = 'id:' + a.id;
+      if (interest[idKey]) w += interest[idKey];
+      if (w > 0) candidates.push({ a, w });
+    }
+    if (candidates.length) {
+      candidates.sort((x, y) => y.w - x.w);
+      // Only override the default ladder when interest is >=2.0 (meaningful).
+      if (candidates[0].w >= 2.0) return candidates[0].a;
     }
   }
 

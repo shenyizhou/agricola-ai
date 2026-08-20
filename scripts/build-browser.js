@@ -19,6 +19,7 @@ const FILES = [
   'js/engine/GameState.js',
   'js/engine/card-effects.js',
   'js/engine/GameEngine.js',
+  'js/ai/card-values.js',
   'js/ai/heuristic-ai.js',
   'js/ai/mcts.js',
 ];
@@ -79,6 +80,15 @@ function build() {
     OCCUPATIONS,
     MINORS,
     ALL_CARDS,
+    // card valuation & plan system
+    valueCard,
+    cardArchetype,
+    choosePlan,
+    planProgress,
+    planResourceMultiplier,
+    planActionInterest,
+    CARD_TABLE,
+    ARCHETYPE_LABEL,
     // constants
     LIMIT_FENCES,
     LIMIT_STABLES,
